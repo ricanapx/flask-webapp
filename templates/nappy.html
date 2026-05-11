@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nappy Tracker</title>
+</head>
+<body>
+<h1>Nappy Tracker</h1>
+
+<form method="POST">
+    <label>Time:</label>
+    <input type="datetime-local" name="time" required>
+
+    <label>Type:</label>
+    <select name="type">
+        <option value="Wet">Wet</option>
+        <option value="Dirty">Dirty</option>
+        <option value="Both">Both</option>
+    </select>
+
+    <label>Notes:</label>
+    <textarea name="notes" placeholder="Optional notes"></textarea>
+
+    <button type="submit">Add Nappy Entry</button>
+</form>
+
+<hr>
+
+<h2>Nappy History</h2>
+
+<ul>
+{% for log in logs %}
+    <li>
+        <strong>{{ log['time'] }}</strong> —
+        {{ log['type'] }} —
+        {{ log['notes'] }}
+    </li>
+{% endfor %}
+</ul>
+
+<a href="{{ url_for('home') }}">Back to Home page</a>
+
+</body>
+</html>

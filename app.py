@@ -119,11 +119,12 @@ def feeding():
         conn.execute("INSERT INTO feeding (time, amount, notes) VALUES (?, ?, ?)",
                     (time, amount, notes))
         conn.commit()
+        
+    # ALWAYS fetch logs (GET or POST)
+    logs = conn.execute("SELECT * FROM feeding ORDER BY id DESC").fetchall()
+    conn.close()
 
-        logs = conn.execute("SELECT * FROM feeding ORDER BY id DESC").fetchall()
-        conn.close
-
-        return render_template('feeding.html', logs=logs)
+    return render_template('feeding.html', logs=logs)
 
 # SLEEP ROUTE        
 @app.route('/sleep', methods=['GET', 'POST'])

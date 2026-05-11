@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep Tracker</title>
+</head>
+<body>
+    <h1>Sleep Tracker</h1>
+
+<form method="POST">
+    <label>Start Time:</label>
+    <input type="datetime-local" name="start" required>
+
+    <label>End Time:</label>
+    <input type="datetime-local" name="end" required>
+
+    <label>Notes:</label>
+    <textarea name="notes" placeholder="Optional notes"></textarea>
+
+    <button type="submit">Add Sleep Entry</button>
+</form>
+
+<hr>
+
+<h2>Sleep History</h2>
+
+<ul>
+{% for log in logs %}
+<li>
+        <strong>{{ log['start_time'] }}</strong> → 
+        <strong>{{ log['end_time'] }}</strong> —
+        {{ log['notes'] }}
+    </li>
+{% endfor %}
+</ul>
+
+<a href="{{ url_for('home') }}">Go back to Home Page</a>
+
+</body>
+</html>

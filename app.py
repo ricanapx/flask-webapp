@@ -28,7 +28,7 @@ def about():
     return '''
     <html>
         <head>
-            <title>About Flask App</title>
+            <title>About this Web App</title>
         </head>
         <body>
             <h1>About This Flask App</h1>
@@ -36,6 +36,21 @@ def about():
         </body>
     </html>
     '''
+
+@app.route('/contact')
+def contact():
+    return '''
+    <html>
+        <head>
+            <title>Contact Us</title>
+        </head>
+        <body>
+            <h1>Contact Us</h1>
+            <p>You can reach us at contact@example.com.</p>
+        </body>
+    </html>
+    '''
+
 # Running the app with a custom host and port, enabling debug mode, and disabling the reloader to prevent the server from restarting automatically when code changes are detected. This is useful for development purposes.
 if __name__ == '__main__': 
     Timer(1, open_browser).start() # Start a timer that will call the open_browser function after 1 second, which will open the web browser to the specified URL.

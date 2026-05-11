@@ -1,8 +1,9 @@
 import webbrowser
 from threading import Timer
-from flask import Flask 
+from flask import Flask, render_template, request, redirect, url_for 
 
 app = Flask(__name__) 
+users = []  # A list to store user data (for demonstration purposes)
 
 # Open the default web browser and navigate to the specified URL (http://localhost:5000/)
 def open_browser():
@@ -11,45 +12,28 @@ def open_browser():
 # Route for the home page 
 @app.route('/') 
 def home():  
-    return '''
-    <html>
-        <head>
-            <title>Flask App</title>
-        </head>
-        <body>
-            <h1>Welcome to the Flask App!</h1>
-            <p>This is a simple Flask application running on localhost.</p>
-        </body> 
-    </html>
-    '''
+    return render_template('home.html')  # Render the home.html template and pass the users list to it
 
 @app.route('/about')
 def about():
-    return '''
-    <html>
-        <head>
-            <title>About this Web App</title>
-        </head>
-        <body>
-            <h1>About This Flask App</h1>
-            <p>This page is a an example to demonstrate flask routing.</p>
-        </body>
-    </html>
-    '''
+    return render_template('about.html')  # Render the about.html template
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':  # Check if the request method is POST (form submission)
+        name = request.form['name']  # Get the name from the form data
+        email = request.form['email']  # Get the email from the form data
+        users.append({'name': name, 'email': email})  # Add the user data to the users list
+        return redirect(url_for('home'))  # Redirect to the home page after registration
+    return render_template('register.html')  # Render the register.html template for GET requests
+
+@app.route('/data')
+def data(): 
+    return render_template('data.html')  # Render the data.html template and pass the users list to it
 
 @app.route('/contact')
 def contact():
-    return '''
-    <html>
-        <head>
-            <title>Contact Us</title>
-        </head>
-        <body>
-            <h1>Contact Us</h1>
-            <p>You can reach us at contact@example.com.</p>
-        </body>
-    </html>
-    '''
+    return render_template('contact.html')  # Render the contact.html template
 
 # Running the app with a custom host and port, enabling debug mode, and disabling the reloader to prevent the server from restarting automatically when code changes are detected. This is useful for development purposes.
 if __name__ == '__main__': 

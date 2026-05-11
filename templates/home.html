@@ -6,12 +6,12 @@
     <title>Home Page</title>
 </head>
 <body>
-    <h1>Welcome to the Home Page</h1>
-    <img src="/static/images/home_image.jpg" alt="Home Image" width="300">
+    <h1>THIS IS THE NEW HOMEPAGE</h1>
+    <img src="{{ url_for('static', filename='images/doctors.jpg') }}" alt="Home Image" width="300">
     <p>This is the home page.</p>
-    <a href="/about">Go to About Page</a>
-    <a href="/register">Go to RegisterPage</a>
-    <a href="/data">View Data</a>
-    <a href="/contact">Contact Us</a>
+    <a href="{{ url_for('about') }}">Go to About Page</a>
+    <a href="{{ url_for('register') }}">Go to Register Page</a>
+    <a href="{{ url_for('data') }}">View Data</a>
+    <a href="{{ url_for('contact') }}">Contact Us</a>
 </body>
 </html>

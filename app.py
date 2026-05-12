@@ -1,36 +1,41 @@
 import webbrowser
 import sqlite3 
 import os
+from flask import Flask, session, flash, render_template, request, redirect, url_for 
+from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
-from flask import Flask, flash, render_template, request, redirect, url_for 
 
 app = Flask(__name__) 
+
 app.secret_key = "redbutterflies"
 
 users = []
 
 # Database Connection
-def get_db_connections():
+def get_db_connection():
     conn = sqlite3.connect('users.db')
     conn.row_factory = sqlite3.Row
     return conn
 
 # CREATE USERS TABLE
 def create_users_table():
-    conn = get_db_connections()
+    conn = sqlite3.connect('users.db')
     conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE
+            first_name TEXT NOT NULL,
+            last_name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )         
-    ''')
+        ''')
     conn.commit()
     conn.close()
 
 # CREATE CHILDCARE TABLES
-def create_chilcare_tables():
-    conn = get_db_connections()
+def create_childcare_tables():
+    conn = get_db_connection()
 
     #feeding table
     conn.execute('''
@@ -76,11 +81,11 @@ def about():
 # FEEDING ROUTE
 @app.route('/feeding', methods=['GET', 'POST'])
 def feeding():
-    conn = get_db_connections()
+    conn = get_db_connection()
 
     if request.method == 'POST':
         time = request.form['time']
-        amount = request.form['amount']
+        amount = int(request.form['amount'])
         notes = request.form['notes']
 
         conn.execute("INSERT INTO feeding (time, amount, notes) VALUES (?, ?, ?)",
@@ -96,7 +101,7 @@ def feeding():
 # SLEEP ROUTE        
 @app.route('/sleep', methods=['GET', 'POST'])
 def sleep():
-    conn = get_db_connections()
+    conn = get_db_connection()
 
     if request.method == 'POST':
         start = request.form['start']
@@ -115,15 +120,15 @@ def sleep():
 # NAPPY ROUTE
 @app.route('/nappy', methods=['GET', 'POST'])
 def nappy():
-    conn = get_db_connections()
+    conn = get_db_connection()
 
     if request.method == 'POST':
         time = request.form['time']
-        type = request.form['type']
+        nappy_type = request.form['type']
         notes = request.form['notes']
 
-        conn.execute("INSERT INTO nappy (time, type, notes) VALUES (?, ?, ?)",
-                     (time, type, notes))
+        conn.execute("INSERT INTO nappy (time, nappy_type, notes) VALUES (?, ?, ?)",
+                     (time, nappy_type, notes))
         conn.commit()
     logs = conn.execute("SELECT * FROM nappy ORDER BY id DESC").fetchall()
     conn.close()
@@ -134,31 +139,51 @@ def nappy():
 # REGISTER USER
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':  
-        name = request.form['name']  
+    if request.method == 'POST':    
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
         email = request.form['email']
+        password = request.form['password']
+
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
         try:
-            conn = get_db_connections()
-            conn.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
+            conn = get_db_connection()
+            conn.execute(
+                "INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
+                (first_name, last_name, email, hashed_password)
+            )
             conn.commit()
             conn.close()
             
+            flash("Registeration Successful!")
             return redirect(url_for('home'))  # Redirect to the home page after registration
-        
+
         except sqlite3.IntegrityError:
             flash("Email already registered.")
             return render_template('register.html')
 
     return render_template('register.html')  # Render the register.html template for GET requests
 
-# VIEW USERS
-@app.route('/users')
-def users(): 
-    conn = get_db_connections()
-    users = conn.execute("SELECT * FROM users").fetchall()
-    conn.close()
-    return render_template('users.html', users=users)  # Render the data.html template and pass the users list to it
+# LOG USERS IN
+@app.route('/login', methods= ['GET', 'POST'])
+def login(): 
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        conn = get_db_connection()
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+        
+        if user and check_password_hash(user['password'], password):
+            flash("Login Successful!")
+            return redirect(url_for('home'))
+        else:
+            flash("Invalid email or password.")
+            return render_template('login.html')
+        
+    return render_template('login.html')  # Render the data.html template and pass the users list to it
 
 @app.route('/contact')
 def contact():
@@ -166,7 +191,7 @@ def contact():
 
 # Run table creation
 create_users_table()
-create_chilcare_tables()
+create_childcare_tables()
 
 # RUN FLASK 
 def open_browser():

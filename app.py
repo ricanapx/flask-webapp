@@ -1,7 +1,7 @@
 import webbrowser
 import sqlite3 
 import os
-from flask import Flask, session, flash, render_template, request, redirect, url_for 
+from flask import Flask, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
 
@@ -61,7 +61,7 @@ def create_childcare_tables():
         CREATE TABLE IF NOT EXISTS nappy (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             time TEXT NOT NULL,
-            type TEXT NOT NULL,
+            nappy_type TEXT NOT NULL,
             notes TEXT 
         )
     ''')

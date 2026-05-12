@@ -1,38 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feeding Tracker</title>
-</head>
-<body><h1>Feeding Tracker</h1>
+{% extends "base.html" %}
+{% block content %}
+<h1>Feeding Log</h1>
 
 <form method="POST">
-    <label>Time:</label>
-    <input type="datetime-local" name="time" required>
+    <label>Time</label>
+    <input type="time" name="time" required>
 
-    <label>Amount (ml):</label>
-    <input type="number" name="amount" placeholder="e.g. 120">
+    <label>Amount (ml)</label>
+    <input type="number" name="amount" required>
 
-    <label>Notes:</label>
-    <textarea name="notes" placeholder="Optional notes"></textarea>
+    <label>Notes</label>
+    <textarea name="notes"></textarea>
 
-    <button type="submit">Add Feeding Entry</button>
+    <button type="submit">Add Feeding</button>
 </form>
 
-<hr>
-
 <h2>Feeding History</h2>
-
-<ul>
-{% for log in logs %}
-    <li>
-        {{ log['time'] }}</strong> —
-        {{ log['amount'] }} ml —
-        {{ log['notes'] }}
-    </li>
-{% endfor %}
-</ul>
-
-</body>
-</html>
+<table>
+    <tr>
+        <th>Time</th>
+        <th>Amount</th>
+        <th>Notes</th>
+    </tr>
+    {% for log in logs %}
+    <tr>
+        <td>{{ log.time }}</td>
+        <td>{{ log.amount }} ml</td>
+        <td>{{ log.notes }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

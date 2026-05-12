@@ -1,20 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">    
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
-</head>
-<body>
-    <h1>THIS IS THE NEW HOMEPAGE</h1>
-    <img src="{{ url_for('static', filename='images/doctors.jpg') }}" alt="Home Image" width="300">
-    <p>This is the home page.</p>
-    <a href="{{ url_for('about') }}">Go to About Page</a>
-    <a href="{{ url_for('register') }}">Go to Register Page</a>
-    <a href="{{ url_for('data') }}">View Data</a>
-    <a href="{{ url_for('contact') }}">Contact Us</a>
-    <a href="{{ url_for('nappy') }}">Nappy Tracker</a>
-    <a href="{{ url_for('feeding') }}">Feeding Tracker</a>
-    <a href="{{ url_for('sleep') }}">Sleep Tracker</a>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h1>Welcome to the Childcare Tracker</h1>
+<p>Track feeding, sleep, and nappy changes easily.</p>
+
+<img src="{{ url_for('static', filename='images/doctors.jpg') }}" alt="Home Image" width="300">
+    style="width:100%; border-radius:8px;">
+{% endblock %}

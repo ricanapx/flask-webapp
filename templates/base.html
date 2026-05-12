@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial; margin: 0; padding: 0; background: #f7f7f7; }
+        nav { background: #333; padding: 10px; }
+        nav a { color: white; margin-right: 15px; text-decoration: none; }
+        nav a:hover { text-decoration: underline; }
+        .container { width: 80%; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; }
+        .flash { background: #ffdddd; padding: 10px; margin-bottom: 10px; border-left: 4px solid red; }
+        input, textarea, select { width: 100%; padding: 10px; margin: 8px 0; }
+        button { padding: 10px 15px; background: #333; color: white; border: none; cursor: pointer; }
+        button:hover { background: #555; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="{{ url_for('home') }}">Home</a>
+    <a href="{{ url_for('about') }}">About</a>
+    <a href="{{ url_for('feeding') }}">Feeding</a>
+    <a href="{{ url_for('sleep') }}">Sleep</a>
+    <a href="{{ url_for('nappy') }}">Nappy</a>
+    <a href="{{ url_for('register') }}">Register</a>
+    <a href="{{ url_for('login') }}">Login</a>
+    <a href="{{ url_for('contact') }}">Contact</a>
+</nav>
+
+<div class="container">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="flash">{{ msg }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

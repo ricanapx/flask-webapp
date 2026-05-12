@@ -1,14 +1,13 @@
 import webbrowser
 import sqlite3 
+import os
 from threading import Timer
-from flask import Flask, render_template, request, redirect, url_for 
+from flask import Flask, flash, render_template, request, redirect, url_for 
 
 app = Flask(__name__) 
+app.secret_key = "redbutterflies"
 
-users = []  # A list to store user data (for demonstration purposes)
-
-# Open the default web browser and navigate to the specified URL (http://localhost:5000/)
- 
+users = []
 
 # Database Connection
 def get_db_connections():
@@ -65,10 +64,6 @@ def create_chilcare_tables():
     conn.commit()
     conn.close()
 
-# Run table creation
-create_users_table()
-create_chilcare_tables()
-
 #ROUTES  
 @app.route('/') 
 def home():  
@@ -77,34 +72,6 @@ def home():
 @app.route('/about')
 def about():
     return render_template('about.html')  # Render the about.html template
-
-# REGISTER USER
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':  
-        name = request.form['name']  
-        email = request.form['email'] 
-        
-        conn = get_db_connections()
-        conn.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
-        conn.commit()
-        conn.close()
-
-        return redirect(url_for('home'))  # Redirect to the home page after registration
-    
-    return render_template('register.html')  # Render the register.html template for GET requests
-
-# VIEW USERS
-@app.route('/data')
-def data(): 
-    conn = get_db_connections()
-    users = conn.execute("SELECT * FROM users").fetchall()
-    conn.close()
-    return render_template('data.html', users=users)  # Render the data.html template and pass the users list to it
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')  # Render the contact.html template
 
 # FEEDING ROUTE
 @app.route('/feeding', methods=['GET', 'POST'])
@@ -163,6 +130,43 @@ def nappy():
 
     return render_template('nappy.html', logs=logs)
 
+
+# REGISTER USER
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':  
+        name = request.form['name']  
+        email = request.form['email']
+
+        try:
+            conn = get_db_connections()
+            conn.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
+            conn.commit()
+            conn.close()
+            
+            return redirect(url_for('home'))  # Redirect to the home page after registration
+        
+        except sqlite3.IntegrityError:
+            flash("Email already registered.")
+            return render_template('register.html')
+
+    return render_template('register.html')  # Render the register.html template for GET requests
+
+# VIEW USERS
+@app.route('/users')
+def users(): 
+    conn = get_db_connections()
+    users = conn.execute("SELECT * FROM users").fetchall()
+    conn.close()
+    return render_template('users.html', users=users)  # Render the data.html template and pass the users list to it
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')  # Render the contact.html template
+
+# Run table creation
+create_users_table()
+create_chilcare_tables()
 
 # RUN FLASK 
 def open_browser():

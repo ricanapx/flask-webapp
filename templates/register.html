@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register Page</title>
+    <title>Registeration</title>
 </head>
 <body>
-    <h1>Register</h1>
+    <h1>User Registeration</h1>
     <form action="/register" method="post">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required><br><br>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required><br><br>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required><br><br>
         <input type="submit" value="Register">
     </form>
-    <a href="{{ url_for('home') }}">Go back to Home Page</a>
-</html>
+    <a href="{{ url_for('users') }}">View Registered Users</a>
+</body>
+</html

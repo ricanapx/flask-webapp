@@ -27,6 +27,10 @@
     <a href="{{ url_for('register') }}">Register</a>
     <a href="{{ url_for('login') }}">Login</a>
     <a href="{{ url_for('contact') }}">Contact</a>
+
+    {% if session.get('user_email') == ADMIN_EMAIL %}
+        <a href="{{ url_for('admin') }}">Admin</a>
+    {% endif %}
 </nav>
 
 <div class="container">

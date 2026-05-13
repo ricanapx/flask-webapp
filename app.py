@@ -1,9 +1,10 @@
 import webbrowser
 import sqlite3 
 import os
-from flask import Flask, flash, render_template, request, redirect, url_for 
+from flask import Flask,session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
+import re
 
 app = Flask(__name__) 
 
@@ -136,6 +137,24 @@ def nappy():
     return render_template('nappy.html', logs=logs)
 
 
+# Email validation using regex
+def is_valid_email(email):
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$'
+    return re.match(email_regex, email)
+
+# Password strength validation
+def is_password_strong(password):
+    if len(password) < 8:
+        return False
+    if not re.search(r'[A-Z]', password):
+        return False
+    if not re.search(r'[a-z]', password):
+        return False
+    if not re.search(r'[0-9]', password):
+        return False
+    return True
+
+
 # REGISTER USER
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -144,6 +163,18 @@ def register():
         last_name = request.form['last_name']
         email = request.form['email']
         password = request.form['password']
+
+        # Validate email
+        if not is_valid_email(email):
+            flash('Invalid email formail. PLease enter a valid email.')
+            return render_template('register.html')
+        
+        if not is_password_strong(password):
+            flash('Password must be at least 8 characters long, include at least one uppercase letter, one lowercase letter and one number.')
+            return render_template('register.html',
+                                   first_name=first_name,
+                                   last_name=last_name,
+                                   email=email)
 
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
@@ -177,13 +208,39 @@ def login():
         conn.close()
         
         if user and check_password_hash(user['password'], password):
-            flash("Login Successful!")
+            first_name = user['first_name']
+            session['user_email'] = user['email']
+            session['first_name'] = user['first_name']
+            
+            flash(f"Login Successful! Welcome, {first_name}!")
             return redirect(url_for('home'))
         else:
             flash("Invalid email or password.")
             return render_template('login.html')
         
     return render_template('login.html')  # Render the data.html template and pass the users list to it
+
+# Admin Route
+ADMIN_EMAIL = "rickyp@hotmail.com"
+
+@app.route('/admin')
+def admin():
+    # To check user is logged in
+    if 'user_email' not in session:
+        flash("You must be logged in to view this page.")
+        return redirect(url_for('login'))
+    
+    # To check if user is admin
+    if session['user_email'] != ADMIN_EMAIL:
+        flash("You do not have permission to view this page.")
+        return redirect(url_for('home'))
+    
+    # Fetch all users
+    conn = get_db_connection()
+    users = conn.execute("SELECT first_name, last_name, email, created_at FROM users ORDER BY created_at DESC").fetchall()
+    conn.close()
+
+    return render_template('admin.html, users=users')
 
 @app.route('/contact')
 def contact():

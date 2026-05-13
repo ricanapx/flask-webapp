@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Welcome to the Childcare Tracker</h1>
+{% if session.get('first_name') %}
+    <h2>Welcome back, {{ session.first_name }}!</h2>
+{% endif %}
+
 <p>Track feeding, sleep, and nappy changes easily.</p>
 
 <img src="{{ url_for('static', filename='images/doctors.jpg') }}" alt="Home Image" width="300">

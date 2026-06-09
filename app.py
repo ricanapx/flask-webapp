@@ -84,6 +84,10 @@ def about():
 def feeding():
     conn = get_db_connection()
 
+    if 'user_email' not in session:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         time = request.form['time']
         amount = int(request.form['amount'])
@@ -104,6 +108,10 @@ def feeding():
 def sleep():
     conn = get_db_connection()
 
+    if 'user_email' not in session:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         start = request.form['start']
         end = request.form['end']
@@ -123,6 +131,10 @@ def sleep():
 def nappy():
     conn = get_db_connection()
 
+    if 'user_email' not in session:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         time = request.form['time']
         nappy_type = request.form['type']
@@ -135,7 +147,6 @@ def nappy():
     conn.close()
 
     return render_template('nappy.html', logs=logs)
-
 
 # Email validation using regex
 def is_valid_email(email):
@@ -240,11 +251,17 @@ def admin():
     users = conn.execute("SELECT first_name, last_name, email, created_at FROM users ORDER BY created_at DESC").fetchall()
     conn.close()
 
-    return render_template('admin.html, users=users')
+    return render_template('admin.html', users=users)
 
 @app.route('/contact')
 def contact():
     return render_template('contact.html')  # Render the contact.html template
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("You have been logged out.")
+    return redirect(url_for('home'))
 
 # Run table creation
 create_users_table()

@@ -1,9 +1,9 @@
 import webbrowser
 import sqlite3 
-import os
 from flask import Flask,session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
+from functools import wraps
 import re
 
 app = Flask(__name__) 
@@ -79,74 +79,15 @@ def home():
 def about():
     return render_template('about.html')  # Render the about.html template
 
-# FEEDING ROUTE
-@app.route('/feeding', methods=['GET', 'POST'])
-def feeding():
-    conn = get_db_connection()
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("You must be logged in to view that page.")
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
-    if 'user_email' not in session:
-        flash("Please log in first.")
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        time = request.form['time']
-        amount = int(request.form['amount'])
-        notes = request.form['notes']
-
-        conn.execute("INSERT INTO feeding (time, amount, notes) VALUES (?, ?, ?)",
-                    (time, amount, notes))
-        conn.commit()
-        
-    # ALWAYS fetch logs (GET or POST)
-    logs = conn.execute("SELECT * FROM feeding ORDER BY id DESC").fetchall()
-    conn.close()
-
-    return render_template('feeding.html', logs=logs)
-
-# SLEEP ROUTE        
-@app.route('/sleep', methods=['GET', 'POST'])
-def sleep():
-    conn = get_db_connection()
-
-    if 'user_email' not in session:
-        flash("Please log in first.")
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        start = request.form['start']
-        end = request.form['end']
-        notes = request.form['notes']
-
-        conn.execute("INSERT INTO sleep (start_time, end_time, notes) VALUES (?, ?, ?)",
-                     (start, end, notes))
-        conn.commit()
-
-    logs = conn.execute("SELECT * FROM sleep ORDER BY id DESC").fetchall()
-    conn.close()
-
-    return render_template('sleep.html', logs=logs)
-
-# NAPPY ROUTE
-@app.route('/nappy', methods=['GET', 'POST'])
-def nappy():
-    conn = get_db_connection()
-
-    if 'user_email' not in session:
-        flash("Please log in first.")
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        time = request.form['time']
-        nappy_type = request.form['type']
-        notes = request.form['notes']
-
-        conn.execute("INSERT INTO nappy (time, nappy_type, notes) VALUES (?, ?, ?)",
-                     (time, nappy_type, notes))
-        conn.commit()
-    logs = conn.execute("SELECT * FROM nappy ORDER BY id DESC").fetchall()
-    conn.close()
-
-    return render_template('nappy.html', logs=logs)
 
 # Email validation using regex
 def is_valid_email(email):
@@ -164,7 +105,6 @@ def is_password_strong(password):
     if not re.search(r'[0-9]', password):
         return False
     return True
-
 
 # REGISTER USER
 @app.route('/register', methods=['GET', 'POST'])
@@ -227,6 +167,8 @@ def login():
         
         if user and check_password_hash(user['password'], password):
             first_name = user['first_name']
+            
+            session['user_id'] = user['id']
             session['user_email'] = user['email']
             session['first_name'] = user['first_name']
             
@@ -238,10 +180,83 @@ def login():
         
     return render_template('login.html')  # Render the data.html template and pass the users list to it
 
+# FEEDING ROUTE
+@app.route('/feeding', methods=['GET', 'POST'])
+@login_required
+def feeding():
+    conn = get_db_connection()
+
+    if 'user_email' not in session:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        time = request.form['time']
+        amount = int(request.form['amount'])
+        notes = request.form['notes']
+
+        conn.execute("INSERT INTO feeding (time, amount, notes) VALUES (?, ?, ?)",
+                    (time, amount, notes))
+        conn.commit()
+        
+    # ALWAYS fetch logs (GET or POST)
+    logs = conn.execute("SELECT * FROM feeding ORDER BY id DESC").fetchall()
+    conn.close()
+
+    return render_template('feeding.html', logs=logs)
+
+# SLEEP ROUTE        
+@app.route('/sleep', methods=['GET', 'POST'])
+@login_required
+def sleep():
+    conn = get_db_connection()
+
+    if 'user_email' not in session:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        start = request.form['start']
+        end = request.form['end']
+        notes = request.form['notes']
+
+        conn.execute("INSERT INTO sleep (start_time, end_time, notes) VALUES (?, ?, ?)",
+                     (start, end, notes))
+        conn.commit()
+
+    logs = conn.execute("SELECT * FROM sleep ORDER BY id DESC").fetchall()
+    conn.close()
+
+    return render_template('sleep.html', logs=logs)
+
+# NAPPY ROUTE
+@app.route('/nappy', methods=['GET', 'POST'])
+@login_required
+def nappy():
+    conn = get_db_connection()
+
+    if 'user_email' not in session:
+        flash("Please log in first.")
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        time = request.form['time']
+        nappy_type = request.form['type']
+        notes = request.form['notes']
+
+        conn.execute("INSERT INTO nappy (time, nappy_type, notes) VALUES (?, ?, ?)",
+                     (time, nappy_type, notes))
+        conn.commit()
+    logs = conn.execute("SELECT * FROM nappy ORDER BY id DESC").fetchall()
+    conn.close()
+
+    return render_template('nappy.html', logs=logs)
+
 # Admin Route
 ADMIN_EMAIL = "rickyp@hotmail.com"
 
 @app.route('/admin')
+@login_required
 def admin():
     # To check user is logged in
     if 'user_email' not in session:

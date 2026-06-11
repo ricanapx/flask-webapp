@@ -134,14 +134,20 @@ def register():
         conn = get_db_connection()
 
         try:
-            conn = get_db_connection()
             conn.execute(
                 "INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
                 (first_name, last_name, email, hashed_password)
             )
             conn.commit()
             
-            flash("Registeration Successful!")
+            #Log in user after registering.
+            user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+            session['user_id'] = user_id
+            session['user_email'] = email
+            session['first_name'] = first_name
+
+            flash(f"Registeration Successful! Welcome, {first_name}!")
             return redirect(url_for('home'))  # Redirect to the home page after registration
 
         except sqlite3.IntegrityError:

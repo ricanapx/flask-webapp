@@ -7,8 +7,10 @@ from functools import wraps
 import re
 
 app = Flask(__name__) 
-
 app.secret_key = "redbutterflies"
+
+ADMIN_EMAIL = "codegirlr@hotmail.com"
+app.jinja_env.globals['admin_email'] = ADMIN_EMAIL
 
 users = []
 
@@ -253,8 +255,6 @@ def nappy():
     return render_template('nappy.html', logs=logs)
 
 # Admin Route
-ADMIN_EMAIL = "rickyp@hotmail.com"
-
 @app.route('/admin')
 @login_required
 def admin():

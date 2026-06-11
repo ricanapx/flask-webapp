@@ -189,6 +189,8 @@ def register():
 
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
+        conn = get_db_connection()
+
         try:
             conn = get_db_connection()
             conn.execute(
@@ -196,15 +198,20 @@ def register():
                 (first_name, last_name, email, hashed_password)
             )
             conn.commit()
-            conn.close()
             
             flash("Registeration Successful!")
             return redirect(url_for('home'))  # Redirect to the home page after registration
 
         except sqlite3.IntegrityError:
             flash("Email already registered.")
-            return render_template('register.html')
-
+            return render_template('register.html',
+                                   first_name=first_name,
+                                   last_name=last_name,
+                                   email=email)
+        
+        finally:
+            conn.close()
+            
     return render_template('register.html')  # Render the register.html template for GET requests
 
 # LOG USERS IN

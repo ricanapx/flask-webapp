@@ -3,6 +3,7 @@ import sqlite3
 from flask import Flask,session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
+from datetime import datetime, timedelta
 from functools import wraps
 import re
 
@@ -56,6 +57,7 @@ def create_childcare_tables():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
+            duration TEXT NOT NULL,
             notes TEXT 
         )
     ''')
@@ -71,6 +73,15 @@ def create_childcare_tables():
 
     conn.commit()
     conn.close()
+
+#Time Formatting
+@app.template_filter('format_time')
+def format_time(value):
+    try:
+        dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
+        return dt.strftime("%I:%M %p")
+    except:
+        return value
 
 #ROUTES  
 @app.route('/') 
@@ -228,8 +239,21 @@ def sleep():
         end = request.form['end']
         notes = request.form['notes']
 
-        conn.execute("INSERT INTO sleep (start_time, end_time, notes) VALUES (?, ?, ?)",
-                     (start, end, notes))
+        # Calculate duration of sleep
+        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
+        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
+
+        # Overnight sleep
+        if end_dt < start_dt:
+            end_dt += timedelta(days=1)
+
+        duration = end_dt - start_dt
+        hours = duration.seconds // 3600
+        minutes = (duration.seconds % 3600) // 60
+        duration_str = f"{hours}h {minutes}m"
+
+        conn.execute("INSERT INTO sleep (start_time, end_time, duration, notes) VALUES (?, ?, ?, ?)",
+                     (start, end, duration_str, notes))
         conn.commit()
 
     logs = conn.execute("SELECT * FROM sleep ORDER BY id DESC").fetchall()

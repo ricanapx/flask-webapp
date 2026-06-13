@@ -6,8 +6,25 @@
     <label>Time</label>
     <input type="time" name="time" required>
 
-    <label>Amount (ml)</label>
-    <input type="number" name="amount" required>
+    <label>Type</label>
+    <select name="type" id="feed-type" onchange="toggleAmountFields()" required>
+        <option value="Milk">Milk</option>
+        <option value="Water">Water</option>
+        <option value="Juice">Juice</option>
+        <option value="Meal">Meal</option>
+        <option value="Snack">Snack</option>
+    </select> 
+    
+    <div id="amount-section">
+        <label>Amount (ml)</label>
+        <input type="number" name="amount" min="0.1" step="0.1">
+
+        <label>Unit</label>
+        <select name="unit">
+            <option value="ml">ml</option>
+            <option value="oz">oz</option>
+        </select>
+    </div>  
 
     <label>Notes</label>
     <textarea name="notes"></textarea>
@@ -19,15 +36,42 @@
 <table>
     <tr>
         <th>Time</th>
+        <th>Type</th>
         <th>Amount</th>
         <th>Notes</th>
     </tr>
+
     {% for log in logs %}
     <tr>
         <td>{{ log.time }}</td>
-        <td>{{ log.amount }} ml</td>
+        <td>{{ log.type }}</td>
+
+        <td>
+            {% if log.amount %}
+                {{ log.amount }} {{ log.unit }}
+            {% else %}
+                - 
+            {% endif %}
+        </td>
+
         <td>{{ log.notes }}</td>
     </tr>
     {% endfor %}
 </table>
+
+<script>
+function toggleAmountFields() {
+    const type = document.getElementById("feed-type").value;
+    const amountSection = document.getElementById("amount-section");
+
+    if (type === "Meal" || type === "Snack") {
+        amountSection.style.display = "none";
+    } else {
+        amountSection.style.display = "block";
+    }
+}
+
+// Run on page load (so editing works)
+toggleAmountFields();
+</script>
 {% endblock %}

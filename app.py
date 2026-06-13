@@ -207,17 +207,32 @@ def login():
 def feeding():
     conn = get_db_connection()
 
-    if 'user_email' not in session:
-        flash("Please log in first.")
-        return redirect(url_for('login'))
-
     if request.method == 'POST':
         time = request.form['time']
-        amount = int(request.form['amount'])
+        feed_type = request.form['type']
         notes = request.form['notes']
 
-        conn.execute("INSERT INTO feeding (time, amount, notes) VALUES (?, ?, ?)",
-                    (time, amount, notes))
+        # If the type is a meal or snack, unit and amount dont need to show
+        if feed_type in ["Meal", "Snack"]:
+            amount_value = None
+            unit = None
+
+        else: 
+            amount = request.form['amount']
+            unit = request.form['unit']
+
+        # Allow decimals, blocking negatives and zeros 
+            try:
+                amount_value = float(amount)
+                if amount_value <= 0:
+                    flash("Amount must be greater than zero.")
+                    return redirect(url_for('feeding'))
+            except ValueError:
+                flash("Amount must be a number.")
+                return redirect(url_for('feeding'))
+
+        conn.execute("INSERT INTO feeding (time, type, amount, unit, notes) VALUES (?, ?, ?, ?, ?)",
+                    (time, feed_type, amount_value, unit, notes))
         conn.commit()
         
     # ALWAYS fetch logs (GET or POST)

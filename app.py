@@ -13,6 +13,15 @@ app.secret_key = "redbutterflies"
 ADMIN_EMAIL = "codegirlr@hotmail.com"
 app.jinja_env.globals['admin_email'] = ADMIN_EMAIL
 
+#Time Formatting
+@app.template_filter('format_time')
+def format_time(value):
+    try:
+        dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
+        return dt.strftime("%I:%M %p — %d %b %Y")
+    except:
+        return value
+
 users = []
 
 # Database Connection
@@ -74,18 +83,9 @@ def create_childcare_tables():
     conn.commit()
     conn.close()
 
-#Time Formatting
-@app.template_filter('format_time')
-def format_time(value):
-    try:
-        dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
-        return dt.strftime("%d %b %Y, %I:%M %p")
-    except:
-        return value
-
 #ROUTES  
 @app.route('/') 
-def home():  
+def home():
     return render_template('home.html')  # Render the home.html template and pass the users list to it
 
 @app.route('/about')
@@ -193,7 +193,7 @@ def login():
             session['user_email'] = user['email']
             session['first_name'] = user['first_name']
             
-            flash(f"Login Successful! Welcome, {first_name}!")
+            flash(f"Login Successful!")
             return redirect(url_for('home'))
         else:
             flash("Invalid email or password.")
@@ -250,8 +250,8 @@ def sleep():
     today = datetime.now()
     three_days_ago = today - timedelta(days=3)
 
-    max_date = today.strftime("%Y-%m-%dT%H:%M")
-    min_date = three_days_ago.strftime("%Y-%m-%dT%H:%M")
+    max_date = today.strftime("%I:%M %p — %d %b %Y")
+    min_date = three_days_ago.strftime("%I:%M %p — %d %b %Y")
 
     conn = get_db_connection()
 
@@ -261,8 +261,8 @@ def sleep():
         notes = request.form['notes']
 
         # Calculate duration of sleep
-        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
-        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
+        start_dt = datetime.strptime(start, "%I:%M %p — %d %b %Y")
+        end_dt = datetime.strptime(end, "%I:%M %p — %d %b %Y")
 
         # Validation to ensure entry must be within last 3 days
         if start_dt < three_days_ago or start_dt > today:

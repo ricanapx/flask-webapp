@@ -4,7 +4,7 @@
 
 <form method="POST">
     <label>Time</label>
-    <input type="time" name="time" required>
+    <input type="datetime-local" name="time" required>
 
     <label>Type</label>
     <select name="type" required>
@@ -27,7 +27,7 @@
     </tr>
     {% for log in logs %}
     <tr>
-        <td>{{ log.time }}</td>
+        <td>{{ log.time | format_time }}</td>
         <td>{{ log.nappy_type }}</td>
         <td>{{ log.notes }}</td>
     </tr>

@@ -4,7 +4,7 @@
 
 <form method="POST">
     <label>Time</label>
-    <input type="time" name="time" required>
+    <input type="datetime-local" name="time" required>
 
     <label>Type</label>
     <select name="type" id="feed-type" onchange="toggleAmountFields()" required>
@@ -43,7 +43,7 @@
 
     {% for log in logs %}
     <tr>
-        <td>{{ log.time }}</td>
+        <td>{{ log.time | format_time }}</td>
         <td>{{ log.type }}</td>
 
         <td>

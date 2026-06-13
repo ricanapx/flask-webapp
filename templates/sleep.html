@@ -3,16 +3,27 @@
 <h1>Sleep Log</h1>
 
 <form method="POST">
-    <label>Start Time</label>
-    <input type="datetime-local" name="start" required>
 
-    <label>End Time</label>
-    <input type="datetime-local" name="end" required>
+    <label for="start">Start Time</label>
+    <input type="datetime-local"
+            id="start" 
+            name="start"
+            min="{{ min_date}}"
+            max="{{max_date}}"    
+            required>
 
-    <label>Notes</label>
-    <textarea name="notes"></textarea>
+    <label for="end">End Time:</label>
+    <input type="datetime-local" 
+            id="end"
+            name="end"
+            min="min_date"
+            max="max_date"
+            required>
 
-    <button type="submit">Add Sleep</button>
+    <label for="notes">Notes</label>
+    <textarea name="notes" id="notes"></textarea>
+
+    <button type="submit">Add Sleep Log</button>
 </form>
 
 <h2>Sleep History</h2>

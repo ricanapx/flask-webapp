@@ -79,7 +79,7 @@ def create_childcare_tables():
 def format_time(value):
     try:
         dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
-        return dt.strftime("%I:%M %p")
+        return dt.strftime("%d %b %Y, %I:%M %p")
     except:
         return value
 
@@ -92,6 +92,8 @@ def home():
 def about():
     return render_template('about.html')  # Render the about.html template
 
+# Decorator for extra protection. 
+# Ensures that anyone who comes across certain pages must be logged in and displays the message too.
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -228,11 +230,15 @@ def feeding():
 @app.route('/sleep', methods=['GET', 'POST'])
 @login_required
 def sleep():
-    conn = get_db_connection()
 
-    if 'user_email' not in session:
-        flash("Please log in first.")
-        return redirect(url_for('login'))
+    # Sleep can only be inputted on the day and going back max three days
+    today = datetime.now()
+    three_days_ago = today - timedelta(days=3)
+
+    max_date = today.strftime("%Y-%m-%dT%H:%M")
+    min_date = three_days_ago.strftime("%Y-%m-%dT%H:%M")
+
+    conn = get_db_connection()
 
     if request.method == 'POST':
         start = request.form['start']
@@ -243,10 +249,20 @@ def sleep():
         start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
         end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
 
-        # Overnight sleep
+        # Validation to ensure entry must be within last 3 days
+        if start_dt < three_days_ago or start_dt > today:
+            flash("Start time must be within the last three days.")
+            return redirect(url_for('sleep'))
+        
+        if end_dt < three_days_ago or end_dt > today:
+            flash("End time must be within the last three days.")
+            return redirect(url_for('sleep'))
+
+        # Overnight sleep being included in the duration
         if end_dt < start_dt:
             end_dt += timedelta(days=1)
 
+        # Actual duration calculation 
         duration = end_dt - start_dt
         hours = duration.seconds // 3600
         minutes = (duration.seconds % 3600) // 60
@@ -259,7 +275,11 @@ def sleep():
     logs = conn.execute("SELECT * FROM sleep ORDER BY id DESC").fetchall()
     conn.close()
 
-    return render_template('sleep.html', logs=logs)
+    return render_template('sleep.html',
+                            logs=logs,
+                            min_date=min_date,
+                            max_date=max_date
+                            )
 
 # NAPPY ROUTE
 @app.route('/nappy', methods=['GET', 'POST'])

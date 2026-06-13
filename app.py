@@ -264,9 +264,16 @@ def sleep():
 
         # Actual duration calculation 
         duration = end_dt - start_dt
-        hours = duration.seconds // 3600
-        minutes = (duration.seconds % 3600) // 60
+        total_minutes = duration.total_seconds() // 60
+        hours = int(total_minutes // 60)
+        minutes = int(total_minutes % 60)
         duration_str = f"{hours}h {minutes}m"
+
+        # Block sleep longer than 16 hours (16 hour blocks not a daily limit)
+        if duration > timedelta(hours=16):
+            flash("Sleep duration cannot exceed 16 hours.")
+            return redirect(url_for('sleep'))
+
 
         conn.execute("INSERT INTO sleep (start_time, end_time, duration, notes) VALUES (?, ?, ?, ?)",
                      (start, end, duration_str, notes))

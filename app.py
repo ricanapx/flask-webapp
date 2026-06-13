@@ -294,10 +294,6 @@ def sleep():
 def nappy():
     conn = get_db_connection()
 
-    if 'user_email' not in session:
-        flash("Please log in first.")
-        return redirect(url_for('login'))
-
     if request.method == 'POST':
         time = request.form['time']
         nappy_type = request.form['type']

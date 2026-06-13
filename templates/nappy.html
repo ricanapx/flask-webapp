@@ -10,7 +10,6 @@
     <select name="type" required>
         <option value="Wet">Wet</option>
         <option value="Dirty">Dirty</option>
-        <option value="Both">Both</option>
     </select>
 
     <label>Notes</label>
@@ -29,7 +28,7 @@
     {% for log in logs %}
     <tr>
         <td>{{ log.time }}</td>
-        <td>{{ log.type }}</td>
+        <td>{{ log.nappy_type }}</td>
         <td>{{ log.notes }}</td>
     </tr>
     {% endfor %}

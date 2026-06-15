@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Welcome back, {{ session['first_name'] }}!</h2>
+
+<h3>Today's Summary</h3>
+
+<p><strong>Feeds:</strong> {{ feeds|length }}</p>
+<p><strong>Naps:</strong> {{ sleeps|length }}</p>
+<p><strong>Nappy changes:</strong> {{ nappies|length }}</p>
+
+<a href="{{ url_for('feeding') }}">Add Feed</a>
+<a href="{{ url_for('sleep') }}">Add Sleep</a>
+<a href="{{ url_for('nappy') }}">Add Nappy</a>
+
+{% endblock %}

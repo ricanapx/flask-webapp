@@ -19,14 +19,17 @@
 <body>
 
 <nav>
-    <a href="{{ url_for('home') }}">Home</a>
-    <a href="{{ url_for('about') }}">About</a>
-    <a href="{{ url_for('contact') }}">Contact</a>
+    {% if session.get('user_id') %}
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    {% else %}
+        <a href="{{ url_for('home') }}">Home</a>
+    {% endif %}
 
     {% if session.get('user_id') %}
         <a href="{{ url_for('feeding') }}">Feeding</a>
         <a href="{{ url_for('sleep') }}">Sleep</a>
         <a href="{{ url_for('nappy') }}">Nappy</a>
+        <a href="{{ url_for('contact') }}">Contact</a>
         <a href="{{ url_for('logout') }}">Logout</a>
 
         {% if session.get('user_email') == admin_email %}
@@ -40,6 +43,9 @@
     {% else %}
         <a href="{{ url_for('login') }}">Login</a>
         <a href="{{ url_for('register') }}">Register</a>
+        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('contact') }}">Contact</a>
+
     {% endif %}
 </nav>
 

@@ -3,7 +3,7 @@ import sqlite3
 from flask import Flask,session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from functools import wraps
 import re
 
@@ -86,6 +86,8 @@ def create_childcare_tables():
 #ROUTES  
 @app.route('/') 
 def home():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
     return render_template('home.html')  # Render the home.html template and pass the users list to it
 
 @app.route('/about')
@@ -152,7 +154,7 @@ def register():
                 (first_name, last_name, email, hashed_password)
             )
             conn.commit()
-            
+                        
             #Log in user after registering.
             user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
@@ -175,6 +177,39 @@ def register():
             
     return render_template('register.html')  # Render the register.html template for GET requests
 
+# DASHBOARD - allows users to see summary of daily input
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    user_id = session['user_id']
+    today = date.today()
+
+    # connect to the db
+    conn = get_db_connection()
+
+    # Fetch today's logs 
+    feeds =  conn.execute(
+        "SELECT * FROM feeding WHERE user_id = ? AND date(time) = ?",
+        (user_id, today)
+    ).fetchall()
+    
+    sleeps = conn.execute(
+        "SELECT * FROM sleep WHERE user_id = ? AND date(start_time) = ?",
+        (user_id, today)
+    ).fetchall()
+
+    nappies = conn.execute(
+        "SELECT * FROM nappy WHERE user_id = ? AND date(time) = ?",
+        (user_id, today)
+    ).fetchall()
+
+    conn.close()
+
+    return render_template('dashboard.html',
+                           feeds=feeds,
+                           sleeps=sleeps,
+                           nappies=nappies)
+
 # LOG USERS IN
 @app.route('/login', methods= ['GET', 'POST'])
 def login(): 
@@ -194,7 +229,7 @@ def login():
             session['first_name'] = user['first_name']
             
             flash(f"Login Successful!")
-            return redirect(url_for('home'))
+            return redirect(url_for('dashboard'))
         else:
             flash("Invalid email or password.")
             return render_template('login.html')
@@ -231,12 +266,15 @@ def feeding():
                 flash("Amount must be a number.")
                 return redirect(url_for('feeding'))
 
-        conn.execute("INSERT INTO feeding (time, type, amount, unit, notes) VALUES (?, ?, ?, ?, ?)",
-                    (time, feed_type, amount_value, unit, notes))
+        conn.execute("INSERT INTO feeding (time, type, amount, unit, notes, user_id) VALUES (?, ?, ?, ?, ?, ?)",
+                    (time, feed_type, amount_value, unit, notes, session['user_id']))
         conn.commit()
         
     # ALWAYS fetch logs (GET or POST)
-    logs = conn.execute("SELECT * FROM feeding ORDER BY id DESC").fetchall()
+    logs = conn.execute(
+        "SELECT * FROM feeding WHERE user_id = ? ORDER BY id DESC",
+        (session['user_id'],)
+    ).fetchall()
     conn.close()
 
     return render_template('feeding.html', logs=logs)
@@ -290,11 +328,14 @@ def sleep():
             return redirect(url_for('sleep'))
 
 
-        conn.execute("INSERT INTO sleep (start_time, end_time, duration, notes) VALUES (?, ?, ?, ?)",
-                     (start, end, duration_str, notes))
+        conn.execute("INSERT INTO sleep (start_time, end_time, duration, notes, user_id) VALUES (?, ?, ?, ?, ?)",
+                     (start, end, duration_str, notes, session['user_id']))
         conn.commit()
 
-    logs = conn.execute("SELECT * FROM sleep ORDER BY id DESC").fetchall()
+    logs = conn.execute(
+        "SELECT * FROM sleep WHERE user_id = ? ORDER BY id DESC",
+        (session['user_id'],)
+    ).fetchall()
     conn.close()
 
     return render_template('sleep.html',
@@ -314,10 +355,14 @@ def nappy():
         nappy_type = request.form['type']
         notes = request.form['notes']
 
-        conn.execute("INSERT INTO nappy (time, nappy_type, notes) VALUES (?, ?, ?)",
-                     (time, nappy_type, notes))
+        conn.execute("INSERT INTO nappy (time, nappy_type, notes, user_id) VALUES (?, ?, ?, ?)",
+                     (time, nappy_type, notes, session['user_id']))
         conn.commit()
-    logs = conn.execute("SELECT * FROM nappy ORDER BY id DESC").fetchall()
+
+    logs = conn.execute(
+        "SELECT * FROM nappy WHERE user_id = ? ORDER BY id DESC",
+        (session['user_id'],)
+    ).fetchall()
     conn.close()
 
     return render_template('nappy.html', logs=logs)

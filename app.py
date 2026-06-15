@@ -279,6 +279,16 @@ def feeding():
 
     return render_template('feeding.html', logs=logs)
 
+# DELETE FROM FEEDING
+@app.route('/feeding/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_feeding(id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM feeding WHERE id = ? AND user_id = ?", (id, session['user_id']))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('feeding'))
+
 # SLEEP ROUTE        
 @app.route('/sleep', methods=['GET', 'POST'])
 @login_required
@@ -344,6 +354,16 @@ def sleep():
                             max_date=max_date
                             )
 
+# DELETE FROM SLEEP
+@app.route('/sleep/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_sleep(id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM sleep WHERE id = ? AND user_id = ?", (id, session['user_id']))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('sleep'))
+
 # NAPPY ROUTE
 @app.route('/nappy', methods=['GET', 'POST'])
 @login_required
@@ -366,6 +386,16 @@ def nappy():
     conn.close()
 
     return render_template('nappy.html', logs=logs)
+
+# DELETE FROM NAPPY 
+@app.route('/nappy/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_nappy(id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM nappy WHERE id = ? AND user_id = ?", (id, session['user_id']))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('nappy'))
 
 # Admin Route
 @app.route('/admin')

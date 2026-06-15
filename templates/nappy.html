@@ -24,12 +24,18 @@
         <th>Time</th>
         <th>Type</th>
         <th>Notes</th>
+        <th>Actions</th>
     </tr>
     {% for log in logs %}
     <tr>
         <td>{{ log.time | format_time }}</td>
         <td>{{ log.nappy_type }}</td>
         <td>{{ log.notes }}</td>
+        <td>
+            <form action="{{ url_for('delete_nappy', id=log['id']) }}" method="post" style="display:inline;">
+                <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </td>
     </tr>
     {% endfor %}
 </table>

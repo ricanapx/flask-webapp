@@ -39,6 +39,7 @@
         <th>Type</th>
         <th>Amount</th>
         <th>Notes</th>
+        <th>Actions</th>
     </tr>
 
     {% for log in logs %}
@@ -55,6 +56,11 @@
         </td>
 
         <td>{{ log.notes }}</td>
+        <td> 
+            <form action="{{ url_for('delete_feeding', id=log['id']) }}" method="post" style="display:inline;">
+                <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </td>
     </tr>
     {% endfor %}
 </table>

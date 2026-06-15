@@ -33,6 +33,7 @@
         <th>End</th>
         <th>Duration</th>
         <th>Notes</th>
+        <th>Actions</th>
     </tr>
     {% for log in logs %}
     <tr>
@@ -40,6 +41,11 @@
         <td>{{ log.end_time | format_time }}</td>
         <td>{{ log.duration }}</td>
         <td>{{ log.notes }}</td>
+        <td>
+            <form action="{{ url_for('delete_sleep', id=log['id']) }}" method="post" style="display:inline;">
+                <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </td>
     </tr>
     {% endfor %}
 </table>

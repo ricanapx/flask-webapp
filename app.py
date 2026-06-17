@@ -241,16 +241,28 @@ def login():
 @login_required
 def feeding():
     conn = get_db_connection()
-
     if request.method == 'POST':
+
+    # Feeds can only be inputted on the day and at that time and going back max three days
+        time_str = request.form['time']
+        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+
+        today = datetime.now()
+        three_days_ago = today - timedelta(days=3)
+
+    # Validation to ensure entry must be within last 3 days        
+        if time_dt < three_days_ago or time_dt > today:
+                flash("Date input must be within the last three days.")
+                return redirect(url_for('feeding'))
+
         time = request.form['time']
         feed_type = request.form['type']
         notes = request.form['notes']
 
         # If the type is a meal or snack, amount and unit are now shown in percentages
         if feed_type in ["Meal", "Snack"]:
-            amount = request.form['percentage']
-            unit = "%"
+                amount = request.form['percentage']
+                unit = "%"
 
         else: 
             amount = request.form['amount']
@@ -268,7 +280,7 @@ def feeding():
         conn.execute("INSERT INTO feeding (time, type, amount, unit, notes, user_id) VALUES (?, ?, ?, ?, ?, ?)",
                     (time, feed_type, amount, unit, notes, session['user_id']))
         conn.commit()
-        
+   
     # ALWAYS show logs (GET order)
     logs = conn.execute(
         "SELECT * FROM feeding WHERE user_id = ? ORDER BY id DESC",
@@ -368,8 +380,19 @@ def delete_sleep(id):
 @login_required
 def nappy():
     conn = get_db_connection()
-
     if request.method == 'POST':
+
+        time_str = request.form['time']
+        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+
+        today = datetime.now()
+        three_days_ago = today - timedelta(days=3)
+
+    # Validation to ensure entry must be within last 3 days        
+        if time_dt < three_days_ago or time_dt > today:
+                flash("Date input must be within the last three days.")
+                return redirect(url_for('nappy'))
+
         time = request.form['time']
         nappy_type = request.form['type']
         notes = request.form['notes']

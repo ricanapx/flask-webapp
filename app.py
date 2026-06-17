@@ -300,6 +300,68 @@ def delete_feeding(id):
     conn.close()
     return redirect(url_for('feeding'))
 
+# UPDATE/EDIT FEEDING INPUT
+@app.route('/feeding/edit/<int:id>', methods=['GET', 'POST'])
+def edit_feeding(id):
+    conn = get_db_connection()
+    log = conn.execute(
+        "SELECT * FROM feeding WHERE id = ? AND user_id = ?",
+        (id, session['user_id'])
+    ).fetchone()
+
+    if not log:
+        flash("Feeding entry not found.")
+        conn.close()
+        return redirect(url_for('feeding'))
+    
+    if request.method == 'POST':
+
+        # Time update/edit
+        time_str = request.form['time']
+        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+
+        today = datetime.now()
+        three_days_ago = today - timedelta(days=3)
+
+    # Validation        
+        if time_dt < three_days_ago or time_dt > today:
+            flash("Date input must be within the last three days.")
+            return redirect(url_for('edit_feeding', id=id))
+    
+        feed_type = request.form['type']
+        notes = request.form['notes']
+
+    # Meal/snack vs drink
+        if feed_type in ["Meal", "Snack"]:
+            amount = request.form['percentage']
+            unit = "%"
+        else: 
+            amount = request.form['amount']
+            unit = request.form['unit']
+        
+            try:
+                if float(amount) <= 0:
+                    flash("Amount must be greater than zero.")
+                    return redirect(url_for('edit_feeding', id=id))
+            except ValueError:
+                flash("Amount must be a number.")
+                return redirect(url_for('edit_feeding', id=id))
+    
+        conn.execute("""
+            UPDATE feeding
+            SET time = ?, type = ?, amount = ?, unit = ?, notes = ?
+            WHERE id = ? AND user_id = ?
+        """, (time_dt, feed_type, amount, unit, notes, id, session['user_id']))
+
+        conn.commit()
+        conn.close()
+
+        flash("Feeding entry updated.")
+        return redirect(url_for('feeding'))
+
+    conn.close()
+    return render_template('edit_feeding.html', log=log)
+
 # SLEEP ROUTE        
 @app.route('/sleep', methods=['GET', 'POST'])
 @login_required

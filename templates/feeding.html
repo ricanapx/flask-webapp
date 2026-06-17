@@ -7,7 +7,7 @@
     <input type="datetime-local" name="time" required>
 
     <label>Type</label>
-    <select name="type" id="feed-type" onchange="toggleAmountFields()" required>
+    <select name="type" id="feed-type" onchange="toggleFields()" required>
         <option value="Milk">Milk</option>
         <option value="Water">Water</option>
         <option value="Juice">Juice</option>
@@ -15,21 +15,31 @@
         <option value="Snack">Snack</option>
     </select> 
     
-    <div id="amount-section">
-        <label>Amount</label>
-        <input type="number" name="amount" min="0.1" step="0.1">
+    <label id="amount-label">Amount Drank</label>
 
-        <label>Unit</label>
+    <div id="measured-fields" style="margin-top:10px;">
+        <input type="number" name="amount" step="0.1" placeholder="Amount">
+     
         <select name="unit">
             <option value="ml">ml</option>
             <option value="oz">oz</option>
         </select>
     </div>  
 
-    <label>Notes</label>
-    <textarea name="notes"></textarea>
-
-    <button type="submit">Add Feeding</button>
+    <div id="percentage-fields" style="display:none; margin-top:10px;;">
+        <select name="percentage">
+            <option value="25">25%</option>
+            <option value="50">50%</option>
+            <option value="75">75%</option>
+            <option value="100">100%</option>
+        </select>
+    </div>
+    <div style="margin-top:10px;">
+        <label>Notes</label>
+        <textarea name="notes" placeholder="Optional notes"></textarea>
+    </div>
+   
+    <button type="submit" class="btn btn-primary" style="margin-top:10px;">Add Feeding</button>
 </form>
 
 <h2>Feeding History</h2>
@@ -48,8 +58,10 @@
         <td>{{ log.type }}</td>
 
         <td>
-            {% if log.amount %}
-                {{ log.amount }} {{ log.unit }}
+            {% if log.amount == "%" %}
+                {{ log.amount }}
+            {% elif log.amount %}
+               {{ log.amount}} {{ log.unit }}
             {% else %}
                 - 
             {% endif %}
@@ -66,18 +78,25 @@
 </table>
 
 <script>
-function toggleAmountFields() {
+function toggleFields() {
     const type = document.getElementById("feed-type").value;
-    const amountSection = document.getElementById("amount-section");
+
+    const measured = document.getElementById("measured-fields");
+    const percent = document.getElementById("percentage-fields");
+    const label = document.getElementById("amount-label");
 
     if (type === "Meal" || type === "Snack") {
-        amountSection.style.display = "none";
+        measured.style.display = "none";
+        percent.style.display = "block";
+        label.textContent = "Amount Ate";
     } else {
-        amountSection.style.display = "block";
+        measured.style.display = "block";
+        percent.style.display = "none";
+        label.textContent = "Amount drank";
     }
 }
 
-// Run on page load (so editing works)
-toggleAmountFields();
+// Run on page load (important for edit forms)
+toggleFields();
 </script>
 {% endblock %}

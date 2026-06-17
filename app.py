@@ -247,10 +247,10 @@ def feeding():
         feed_type = request.form['type']
         notes = request.form['notes']
 
-        # If the type is a meal or snack, unit and amount dont need to show
+        # If the type is a meal or snack, amount and unit are now shown in percentages
         if feed_type in ["Meal", "Snack"]:
-            amount_value = None
-            unit = None
+            amount = request.form['percentage']
+            unit = "%"
 
         else: 
             amount = request.form['amount']
@@ -258,8 +258,7 @@ def feeding():
 
         # Allow decimals, blocking negatives and zeros 
             try:
-                amount_value = float(amount)
-                if amount_value <= 0:
+                if float(amount) <= 0:
                     flash("Amount must be greater than zero.")
                     return redirect(url_for('feeding'))
             except ValueError:
@@ -267,10 +266,10 @@ def feeding():
                 return redirect(url_for('feeding'))
 
         conn.execute("INSERT INTO feeding (time, type, amount, unit, notes, user_id) VALUES (?, ?, ?, ?, ?, ?)",
-                    (time, feed_type, amount_value, unit, notes, session['user_id']))
+                    (time, feed_type, amount, unit, notes, session['user_id']))
         conn.commit()
         
-    # ALWAYS fetch logs (GET or POST)
+    # ALWAYS show logs (GET order)
     logs = conn.execute(
         "SELECT * FROM feeding WHERE user_id = ? ORDER BY id DESC",
         (session['user_id'],)

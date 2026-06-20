@@ -4,20 +4,20 @@
 
 <form method="POST">
 
-    <label for="start">Start Time</label>
+    <label for="start">Start Time:</label>
     <input type="datetime-local"
             id="start" 
             name="start"
-            min="{{ min_date}}"
-            max="{{max_date}}"    
+            min="{{ min_date }}"
+            max="{{max_date }}"    
             required>
 
     <label for="end">End Time:</label>
     <input type="datetime-local" 
             id="end"
             name="end"
-            min="min_date"
-            max="max_date"
+            min="{{ min_date }}"
+            max="{{ max_date }}"
             required>
 
     <label for="notes">Notes</label>

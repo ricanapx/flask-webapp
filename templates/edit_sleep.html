@@ -1,0 +1,46 @@
+<h2>Edit Sleep</h2>
+
+{% if error %}
+    <p class="error">{{ error }}</p>
+{% endif %}
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<form method="POST">
+
+    <label for="start">Start Time:</label>
+    <input
+        type="datetime-local" 
+        id="start" 
+        name="start" 
+        value="{{ log.start_time }}"
+        required
+    >
+
+    <label for="end">End Time:</label>
+    <input
+        type="datetime-local" 
+        id="end" 
+        name="end" 
+        value="{{ log.end_time }}"
+        required
+    >
+
+    <label for="notes">Notes:</label>
+    <textarea 
+        id="notes" 
+        name="notes"
+        placeholder="Update notes..."
+    >{{ log.notes }}</textarea>
+
+    <button type="submit" class = "btn btn-primary" style="margin-top:10px;"> Update Sleep</button>
+    <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
+</form>

@@ -1,3 +1,13 @@
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
 <h2>Edit Feeding</h2>
 
 <form method="POST">
@@ -15,10 +25,13 @@
     </select>
 
     <label id="amount-label">
-        {% if log.unit == "%" %}Amount Ate{% else %}Amount Drank{% endif %}
+        {% if log.unit == "%" %}
+            Amount Ate
+        {% else %}
+            Amount Drank
+        {% endif %}
     </label>
 
-    <!-- ml/oz fields -->
     <div id="measured-fields" style="margin-top:10px;">
         <input type="number" name="amount" step="0.1" value="{{ log.amount if log.unit != '%' else '' }}">
         <select name="unit">
@@ -27,7 +40,6 @@
         </select>
     </div>
 
-    <!-- percentage fields -->
     <div id="percentage-fields" style="margin-top:10px; display:none;">
         <select name="percentage">
             <option value="25"  {% if log.amount == 25 %}selected{% endif %}>25%</option>
@@ -41,6 +53,7 @@
     <textarea name="notes">{{ log.notes }}</textarea>
 
     <button type="submit" class="btn btn-primary" style="margin-top:10px;">Save Changes</button>
+    <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
 </form>
 
 <script>

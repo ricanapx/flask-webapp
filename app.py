@@ -315,7 +315,10 @@ def edit_feeding(id):
         return redirect(url_for('feeding'))
     
     if request.method == 'POST':
-
+        if 'cancel' in request.form:
+            flash("Update cancelled.")
+            return redirect('/feeding')
+        
         # Time update/edit
         time_str = request.form['time']
         time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
@@ -377,13 +380,17 @@ def sleep():
     conn = get_db_connection()
 
     if request.method == 'POST':
+        if 'cancel' in request.form:
+            flash("Update cancelled.")
+            return redirect('/feeding')
+        
         start = request.form['start']
         end = request.form['end']
         notes = request.form['notes']
 
         # Calculate duration of sleep
-        start_dt = datetime.strptime(start, "%I:%M %p — %d %b %Y")
-        end_dt = datetime.strptime(end, "%I:%M %p — %d %b %Y")
+        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
+        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
 
         # Validation to ensure entry must be within last 3 days
         if start_dt < three_days_ago or start_dt > today:
@@ -437,6 +444,62 @@ def delete_sleep(id):
     conn.close()
     return redirect(url_for('sleep'))
 
+# UPDATE SLEEP 
+@app.route('/edit/sleep/<int:id>', methods=['GET', 'POST'])
+def edit_sleep(id):
+
+    if 'user_id' not in session:
+        return redirect ('/login')
+
+    conn = get_db_connection()
+    log = conn.execute(
+        "SELECT * FROM sleep WHERE id = ? AND user_id = ?",
+        (id, session['user_id'])
+    ).fetchone()
+
+    if not log:
+        conn.close()
+        return "Sleep entry not found."
+    
+    if request.method == 'POST':
+        if 'cancel' in request.form:
+            flash("Update cancelled.")
+            return redirect('/sleep')
+        
+        start = request.form['start']
+        end = request.form['end']
+        notes = request.form['notes']
+
+        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
+        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
+
+        # End time cannot be earlier than start time 
+        if end_dt < start_dt:
+            conn.close()
+            error = "End time cannot be earlier than start time."
+            return render_template('edit_sleep.html', log=log, error=error)
+
+        duration = end_dt - start_dt
+        total_minutes = duration.total_seconds() // 60
+        hours = int(total_minutes // 60)
+        minutes = int(total_minutes % 60)
+        duration_str = f"{hours}h {minutes}m"
+
+        conn.execute( """
+            UPDATE sleep
+            SET start_time = ?, end_time = ?, notes = ?, duration = ?
+            WHERE id = ? AND user_id = ? 
+        """, (start, end, notes, duration_str, id, session['user_id']))
+
+        conn.commit()
+        conn.close()
+        
+        flash("Sleep entry updated.")
+        return redirect(url_for('sleep', log=log))
+
+    conn.close()
+    return render_template('edit_sleep.html', log=log)
+
 # NAPPY ROUTE
 @app.route('/nappy', methods=['GET', 'POST'])
 @login_required
@@ -480,6 +543,47 @@ def delete_nappy(id):
     conn.commit()
     conn.close()
     return redirect(url_for('nappy'))
+
+# UPDATE NAPPY
+@app.route('/nappy/edit/<int:id>', methods=['GET', 'POST'])
+def edit_nappy(id):
+
+    if 'user_id' not in session:
+        return redirect ('/login')
+    
+    conn = get_db_connection()
+    log = conn.execute(
+        "SELECT * FROM nappy WHERE id = ? AND user_id = ?",
+        (id, session['user_id'])
+    ).fetchone()
+
+    if not log:
+        conn.close()
+        return "Nappy entry not found."
+    
+    if request.method == 'POST':
+        if 'cancel' in request.form:
+            flash("Update cancelled.")
+            return redirect('/nappy')
+        
+        time_str = request.form['time']
+        nappy_type = request.form['type']
+        notes = request.form['notes']
+
+        conn.execute("""
+                UPDATE nappy
+                SET time = ?, nappy_type = ?, notes = ?
+                WHERE id =? AND  user_id = ?
+                """, (time_str, nappy_type, notes, id, session['user_id']))
+        
+        conn.commit()
+        conn.close()
+
+        flash("Nappy entry updated.")
+        return redirect ('/nappy')
+    
+    conn.close()
+    return render_template ('edit_nappy.html', log=log)
 
 # Admin Route
 @app.route('/admin')

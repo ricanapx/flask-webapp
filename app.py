@@ -1,35 +1,37 @@
 import webbrowser
 import sqlite3 
+from pymongo import MongoClient
+from dotenv import load_dotenv
+from bson import ObjectId
 from flask import Flask,session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
 from datetime import datetime, timedelta, date
 from functools import wraps
 import re
+import os
+
+load_dotenv()
 
 app = Flask(__name__) 
 app.secret_key = "redbutterflies"
 
-ADMIN_EMAIL = "codegirlr@hotmail.com"
-app.jinja_env.globals['admin_email'] = ADMIN_EMAIL
+MONGO_URI = os.getenv("MONGO_URI")
+client = MongoClient(MONGO_URI)
 
-#Time Formatting
-@app.template_filter('format_time')
-def format_time(value):
-    try:
-        dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
-        return dt.strftime("%I:%M %p — %d %b %Y")
-    except:
-        return value
+db = client["Childcare_Tracking"]
 
 users = []
-
 # Database Connection
 def get_db_connection():
     conn = sqlite3.connect('users.db')
     conn.row_factory = sqlite3.Row
     return conn
 
+
+ADMIN_EMAIL = "codegirlr@hotmail.com"
+app.jinja_env.globals['admin_email'] = ADMIN_EMAIL
+    
 # CREATE USERS TABLE
 def create_users_table():
     conn = sqlite3.connect('users.db')
@@ -46,44 +48,15 @@ def create_users_table():
     conn.commit()
     conn.close()
 
-# CREATE CHILDCARE TABLES
-def create_childcare_tables():
-    conn = get_db_connection()
+#Time Formatting
+@app.template_filter('format_time')
+def format_time(value):
+    try:
+        dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
+        return dt.strftime("%I:%M %p — %d %b %Y")
+    except:
+        return value
 
-    #feeding table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS feeding (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            time TEXT NOT NULL,
-            amount INTEGER,
-            notes TEXT
-        )
-    ''')
-
-    # Sleep table 
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS sleep (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            start_time TEXT NOT NULL,
-            end_time TEXT NOT NULL,
-            duration TEXT NOT NULL,
-            notes TEXT 
-        )
-    ''')
-    # Nappy table
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS nappy (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            time TEXT NOT NULL,
-            nappy_type TEXT NOT NULL,
-            notes TEXT 
-        )
-    ''')
-
-    conn.commit()
-    conn.close()
-
-#ROUTES  
 @app.route('/') 
 def home():
     if 'user_id' in session:
@@ -93,7 +66,7 @@ def home():
 @app.route('/about')
 def about():
     return render_template('about.html')  # Render the about.html template
-
+    
 # Decorator for extra protection. 
 # Ensures that anyone who comes across certain pages must be logged in and displays the message too.
 def login_required(f):
@@ -105,13 +78,10 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
-# Email validation using regex
 def is_valid_email(email):
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$'
     return re.match(email_regex, email)
 
-# Password strength validation
 def is_password_strong(password):
     if len(password) < 8:
         return False
@@ -132,7 +102,6 @@ def register():
         email = request.form['email']
         password = request.form['password']
 
-        # Validate email
         if not is_valid_email(email):
             flash('Invalid email formail. PLease enter a valid email.')
             return render_template('register.html')
@@ -240,17 +209,16 @@ def login():
 @app.route('/feeding', methods=['GET', 'POST'])
 @login_required
 def feeding():
-    conn = get_db_connection()
+  
     if request.method == 'POST':
 
-    # Feeds can only be inputted on the day and at that time and going back max three days
         time_str = request.form['time']
         time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
 
         today = datetime.now()
         three_days_ago = today - timedelta(days=3)
 
-    # Validation to ensure entry must be within last 3 days        
+    # Validation       
         if time_dt < three_days_ago or time_dt > today:
                 flash("Date input must be within the last three days.")
                 return redirect(url_for('feeding'))
@@ -259,7 +227,6 @@ def feeding():
         feed_type = request.form['type']
         notes = request.form['notes']
 
-        # If the type is a meal or snack, amount and unit are now shown in percentages
         if feed_type in ["Meal", "Snack"]:
                 amount = request.form['percentage']
                 unit = "%"
@@ -268,7 +235,6 @@ def feeding():
             amount = request.form['amount']
             unit = request.form['unit']
 
-        # Allow decimals, blocking negatives and zeros 
             try:
                 if float(amount) <= 0:
                     flash("Amount must be greater than zero.")
@@ -277,41 +243,55 @@ def feeding():
                 flash("Amount must be a number.")
                 return redirect(url_for('feeding'))
 
-        conn.execute("INSERT INTO feeding (time, type, amount, unit, notes, user_id) VALUES (?, ?, ?, ?, ?, ?)",
-                    (time, feed_type, amount, unit, notes, session['user_id']))
-        conn.commit()
+        db.feeding_logs.insert_one({
+            "time": time_dt,
+            "type": feed_type,
+            "amount": amount,
+            "unit": unit,
+            "notes": notes,
+            "user_id": session['user_id']
+        })
+
+        return redirect(url_for('feeding'))
    
     # ALWAYS show logs (GET order)
-    logs = conn.execute(
-        "SELECT * FROM feeding WHERE user_id = ? ORDER BY id DESC",
-        (session['user_id'],)
-    ).fetchall()
-    conn.close()
+    logs = list(
+        db.feeding_logs
+        .find({"user_id": session['user_id']})
+        .sort("_id", -1)
+    )
 
     return render_template('feeding.html', logs=logs)
 
 # DELETE FROM FEEDING
-@app.route('/feeding/delete/<int:id>', methods=['POST'])
+@app.route('/feeding/delete/<id>', methods=['POST'])
 @login_required
 def delete_feeding(id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM feeding WHERE id = ? AND user_id = ?", (id, session['user_id']))
-    conn.commit()
-    conn.close()
+
+    result = db.feeding_logs.delete_one({
+        "_id": ObjectId(id),
+        "user_id": session['user_id']
+    })
+
+    if result.deleted_count == 0:
+        flash("Could not delete entry.")
+    else:
+        flash("Feeding entry deleted.")
+
     return redirect(url_for('feeding'))
 
 # UPDATE/EDIT FEEDING INPUT
-@app.route('/feeding/edit/<int:id>', methods=['GET', 'POST'])
+@app.route('/feeding/edit/<id>', methods=['GET', 'POST'])
+@login_required
 def edit_feeding(id):
-    conn = get_db_connection()
-    log = conn.execute(
-        "SELECT * FROM feeding WHERE id = ? AND user_id = ?",
-        (id, session['user_id'])
-    ).fetchone()
+
+    log = db.feeding_logs.find_one({
+        "_id": ObjectId(id),
+        "user_id": session['user_id']
+    })
 
     if not log:
         flash("Feeding entry not found.")
-        conn.close()
         return redirect(url_for('feeding'))
     
     if request.method == 'POST':
@@ -325,8 +305,7 @@ def edit_feeding(id):
 
         today = datetime.now()
         three_days_ago = today - timedelta(days=3)
-
-    # Validation        
+        
         if time_dt < three_days_ago or time_dt > today:
             flash("Date input must be within the last three days.")
             return redirect(url_for('edit_feeding', id=id))
@@ -350,39 +329,43 @@ def edit_feeding(id):
                 flash("Amount must be a number.")
                 return redirect(url_for('edit_feeding', id=id))
     
-        conn.execute("""
-            UPDATE feeding
-            SET time = ?, type = ?, amount = ?, unit = ?, notes = ?
-            WHERE id = ? AND user_id = ?
-        """, (time_dt, feed_type, amount, unit, notes, id, session['user_id']))
-
-        conn.commit()
-        conn.close()
+        db.feeding_logs.update_one(
+            {"_id": ObjectId(id)},
+            {"$set": {
+                "time": time_str,
+                "type": feed_type,
+                "amount": amount,
+                "unit": unit,
+                "notes": notes
+            }}
+        )
 
         flash("Feeding entry updated.")
         return redirect(url_for('feeding'))
 
-    conn.close()
+
     return render_template('edit_feeding.html', log=log)
 
 # SLEEP ROUTE        
 @app.route('/sleep', methods=['GET', 'POST'])
 @login_required
 def sleep():
+    logs = list(
+        db.sleep_logs
+        .find({"user_id": session['user_id']})
+        .sort("_id", -1)
+    )
 
-    # Sleep can only be inputted on the day and going back max three days
     today = datetime.now()
     three_days_ago = today - timedelta(days=3)
 
-    max_date = today.strftime("%I:%M %p — %d %b %Y")
-    min_date = three_days_ago.strftime("%I:%M %p — %d %b %Y")
-
-    conn = get_db_connection()
+    max_date = today.strftime("%Y-%m-%dT%H:%M")
+    min_date = three_days_ago.strftime("%Y-%m-%dT%H:%M")
 
     if request.method == 'POST':
         if 'cancel' in request.form:
             flash("Update cancelled.")
-            return redirect('/feeding')
+            return redirect(url_for('sleep'))
         
         start = request.form['start']
         end = request.form['end']
@@ -416,17 +399,20 @@ def sleep():
         if duration > timedelta(hours=16):
             flash("Sleep duration cannot exceed 16 hours.")
             return redirect(url_for('sleep'))
+        
+        db.sleep_logs.insert_one({
+            "start_time": start,
+            "end_time": end,
+            "duration": duration_str,
+            "notes": notes,
+            "user_id": session['user_id']
+        })
 
-
-        conn.execute("INSERT INTO sleep (start_time, end_time, duration, notes, user_id) VALUES (?, ?, ?, ?, ?)",
-                     (start, end, duration_str, notes, session['user_id']))
-        conn.commit()
-
-    logs = conn.execute(
-        "SELECT * FROM sleep WHERE user_id = ? ORDER BY id DESC",
-        (session['user_id'],)
-    ).fetchall()
-    conn.close()
+    logs = list(
+        db.sleep_logs
+        .find({"user_id": session['user_id']})
+        .sort("_id", -1)
+    )
 
     return render_template('sleep.html',
                             logs=logs,
@@ -435,36 +421,47 @@ def sleep():
                             )
 
 # DELETE FROM SLEEP
-@app.route('/sleep/delete/<int:id>', methods=['POST'])
+@app.route('/sleep/delete/<id>', methods=['POST'])
 @login_required
 def delete_sleep(id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM sleep WHERE id = ? AND user_id = ?", (id, session['user_id']))
-    conn.commit()
-    conn.close()
+
+    result = db.sleep_logs.delete_one({
+        "_id": ObjectId(id),
+        "user_id": session['user_id']
+    })
+
+    if result.deleted_count == 0:
+        flash("Could not delete sleep entry.")
+    else:
+        flash("Sleep entry deleted.")
+
     return redirect(url_for('sleep'))
 
 # UPDATE SLEEP 
-@app.route('/edit/sleep/<int:id>', methods=['GET', 'POST'])
+@app.route('/edit/sleep/<id>', methods=['GET', 'POST'])
+@login_required
 def edit_sleep(id):
 
-    if 'user_id' not in session:
-        return redirect ('/login')
-
-    conn = get_db_connection()
-    log = conn.execute(
-        "SELECT * FROM sleep WHERE id = ? AND user_id = ?",
-        (id, session['user_id'])
-    ).fetchone()
+    log = db.sleep_logs.find_one({
+        "_id": ObjectId(id),
+        "user_id": session['user_id']
+    })
 
     if not log:
-        conn.close()
-        return "Sleep entry not found."
-    
+        flash("Sleep entry not found.")
+        return redirect(url_for('sleep'))
+
+    today = datetime.now()
+    three_days_ago = today - timedelta(days=3)
+
+    max_date = today.strftime("%Y-%m-%dT%H:%M")
+    min_date = three_days_ago.strftime("%Y-%m-%dT%H:%M")
+
     if request.method == 'POST':
+        
         if 'cancel' in request.form:
             flash("Update cancelled.")
-            return redirect('/sleep')
+            return redirect(url_for('sleep'))
         
         start = request.form['start']
         end = request.form['end']
@@ -473,11 +470,16 @@ def edit_sleep(id):
         start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
         end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
 
-        # End time cannot be earlier than start time 
+        if start_dt < three_days_ago or start_dt > today:
+            flash("Start time must be within the last three days.")
+            return redirect(url_for('edit_sleep', id=id))
+
+        if end_dt < three_days_ago or end_dt > today:
+            flash("End time must be within the last three days.")
+            return redirect(url_for('edit_sleep', id=id))
+                
         if end_dt < start_dt:
-            conn.close()
-            error = "End time cannot be earlier than start time."
-            return render_template('edit_sleep.html', log=log, error=error)
+            end_dt += timedelta(days=1)
 
         duration = end_dt - start_dt
         total_minutes = duration.total_seconds() // 60
@@ -485,26 +487,35 @@ def edit_sleep(id):
         minutes = int(total_minutes % 60)
         duration_str = f"{hours}h {minutes}m"
 
-        conn.execute( """
-            UPDATE sleep
-            SET start_time = ?, end_time = ?, notes = ?, duration = ?
-            WHERE id = ? AND user_id = ? 
-        """, (start, end, notes, duration_str, id, session['user_id']))
-
-        conn.commit()
-        conn.close()
+        if duration > timedelta(hours=16):
+            flash("Sleep duration cannot exceed 16 hours.")
+            return redirect(url_for('edit_sleep', id=id))
+        
+        db.sleep_logs.update_one(
+            {"_id": ObjectId(id), "user_id": session['user_id']},
+            {"$set": {
+                "start_time": start,
+                "end_time": end,
+                "duration": duration_str,
+                "notes": notes
+            }}
+        )
         
         flash("Sleep entry updated.")
         return redirect(url_for('sleep', log=log))
 
-    conn.close()
-    return render_template('edit_sleep.html', log=log)
+    return render_template(
+        'edit_sleep.html', 
+        log=log,
+        min_date=min_date,
+        max_date=max_date
+    )
 
 # NAPPY ROUTE
 @app.route('/nappy', methods=['GET', 'POST'])
 @login_required
 def nappy():
-    conn = get_db_connection()
+
     if request.method == 'POST':
 
         time_str = request.form['time']
@@ -515,74 +526,95 @@ def nappy():
 
     # Validation to ensure entry must be within last 3 days        
         if time_dt < three_days_ago or time_dt > today:
-                flash("Date input must be within the last three days.")
-                return redirect(url_for('nappy'))
+            flash("Date input must be within the last three days.")
+            return redirect(url_for('nappy'))
 
-        time = request.form['time']
         nappy_type = request.form['type']
         notes = request.form['notes']
 
-        conn.execute("INSERT INTO nappy (time, nappy_type, notes, user_id) VALUES (?, ?, ?, ?)",
-                     (time, nappy_type, notes, session['user_id']))
-        conn.commit()
+        db.nappy_logs.insert_one({
+            "user_id": session['user_id'],            
+            "time": time_dt,
+            "type": nappy_type,
+            "notes": notes,
+        })
 
-    logs = conn.execute(
-        "SELECT * FROM nappy WHERE user_id = ? ORDER BY id DESC",
-        (session['user_id'],)
-    ).fetchall()
-    conn.close()
+    logs = list(
+        db.nappy_logs
+        .find({"user_id": session['user_id']})
+        .sort("_id", -1)
+    )
 
     return render_template('nappy.html', logs=logs)
 
 # DELETE FROM NAPPY 
-@app.route('/nappy/delete/<int:id>', methods=['POST'])
+@app.route('/nappy/delete/<id>', methods=['POST'])
 @login_required
 def delete_nappy(id):
-    conn = get_db_connection()
-    conn.execute("DELETE FROM nappy WHERE id = ? AND user_id = ?", (id, session['user_id']))
-    conn.commit()
-    conn.close()
+
+    result = db.nappy_logs.delete_one({
+        "_id": ObjectId(id),
+        "user_id": session['user_id']
+    })
+
+    if result.deleted_count == 0:
+        flash("Could not delete nappy entry.")
+    else:
+        flash("Nappy entry deleted.")
+
     return redirect(url_for('nappy'))
 
 # UPDATE NAPPY
-@app.route('/nappy/edit/<int:id>', methods=['GET', 'POST'])
+@app.route('/nappy/edit/<id>', methods=['GET', 'POST'])
+@login_required
 def edit_nappy(id):
 
     if 'user_id' not in session:
         return redirect ('/login')
     
-    conn = get_db_connection()
-    log = conn.execute(
-        "SELECT * FROM nappy WHERE id = ? AND user_id = ?",
-        (id, session['user_id'])
-    ).fetchone()
+    log = db.nappy_logs.find_one({
+        "_id": ObjectId(id),
+        "user_id": session['user_id']
+    })
 
     if not log:
-        conn.close()
-        return "Nappy entry not found."
+        flash("Nappy entry not found.")
+        return redirect(url_for('nappy'))
+
     
     if request.method == 'POST':
+
         if 'cancel' in request.form:
             flash("Update cancelled.")
             return redirect('/nappy')
         
         time_str = request.form['time']
+        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+
+        today = datetime.now()
+        three_days_ago = today - timedelta(days=3)
+
+        # Validation
+        if time_dt < three_days_ago or time_dt > today:
+            flash("Date input must be within the last three days.")
+            return redirect(url_for('edit_nappy', id=id))
+        
         nappy_type = request.form['type']
         notes = request.form['notes']
 
-        conn.execute("""
-                UPDATE nappy
-                SET time = ?, nappy_type = ?, notes = ?
-                WHERE id =? AND  user_id = ?
-                """, (time_str, nappy_type, notes, id, session['user_id']))
-        
-        conn.commit()
-        conn.close()
+        db.nappy_logs.update_one(
+            {"_id": ObjectId(id), "user_id": session['user_id']},
+            {"$set": {
+            "time": time_dt,
+            "type": nappy_type,
+            "notes": notes,
+            }}
+        )
 
         flash("Nappy entry updated.")
         return redirect ('/nappy')
     
-    conn.close()
+
     return render_template ('edit_nappy.html', log=log)
 
 # Admin Route
@@ -618,7 +650,6 @@ def logout():
 
 # Run table creation
 create_users_table()
-create_childcare_tables()
 
 # RUN FLASK 
 def open_browser():

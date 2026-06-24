@@ -40,12 +40,12 @@
         </select>
     </div>
 
-    <div id="percentage-fields" style="margin-top:10px; display:none;">
+    <div id="percentage-fields" style="margin-top:10px;">
         <select name="percentage">
-            <option value="25"  {% if log.amount == 25 %}selected{% endif %}>25%</option>
-            <option value="50"  {% if log.amount == 50 %}selected{% endif %}>50%</option>
-            <option value="75"  {% if log.amount == 75 %}selected{% endif %}>75%</option>
-            <option value="100" {% if log.amount == 100 %}selected{% endif %}>100%</option>
+            <option value="25"  {% if log.amount == "25" %}selected{% endif %}>25%</option>
+            <option value="50"  {% if log.amount == "50" %}selected{% endif %}>50%</option>
+            <option value="75"  {% if log.amount == "75" %}selected{% endif %}>75%</option>
+            <option value="100" {% if log.amount == "100" %}selected{% endif %}>100%</option>
         </select>
     </div>
 

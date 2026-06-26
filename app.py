@@ -244,12 +244,12 @@ def feeding():
                 return redirect(url_for('feeding'))
 
         db.feeding_logs.insert_one({
+            "user_id": session['user_id'],
             "time": time_dt,
             "type": feed_type,
             "amount": amount,
             "unit": unit,
             "notes": notes,
-            "user_id": session['user_id']
         })
 
         return redirect(url_for('feeding'))
@@ -401,11 +401,11 @@ def sleep():
             return redirect(url_for('sleep'))
         
         db.sleep_logs.insert_one({
+           "user_id": session['user_id'],            
             "start_time": start,
             "end_time": end,
             "duration": duration_str,
-            "notes": notes,
-            "user_id": session['user_id']
+            "notes": notes 
         })
 
     logs = list(
@@ -535,7 +535,7 @@ def nappy():
         db.nappy_logs.insert_one({
             "user_id": session['user_id'],            
             "time": time_dt,
-            "type": nappy_type,
+            "nappy_type": nappy_type,
             "notes": notes,
         })
 
@@ -606,7 +606,7 @@ def edit_nappy(id):
             {"_id": ObjectId(id), "user_id": session['user_id']},
             {"$set": {
             "time": time_dt,
-            "type": nappy_type,
+            "nappy_type": nappy_type,
             "notes": notes,
             }}
         )

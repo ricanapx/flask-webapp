@@ -12,7 +12,7 @@
   {% endif %}
 {% endwith %}
 
-<h2>Edit Sleep</h2>
+<h2>Edit Nappy</h2>
 
 <form method ="POST">
 
@@ -27,8 +27,8 @@
 
     <label for="type">Type</label>
         <select name="type" id="type" required>
-            <option value="wet"  {% if log.nappy_type == 'wet' %}selected{% endif %}>Wet</option>
-            <option value="dirty"  {% if log.nappy_type == 'dirty' %}selected{% endif %}>Dirty</option>        
+            <option value="Wet"  {% if log.nappy_type == 'Wet' %}selected{% endif %}>Wet</option>
+            <option value="Dirty"  {% if log.nappy_type == 'Dirty' %}selected{% endif %}>Dirty</option>        
         </select>
 
     <label for="notes">Notes</label>
@@ -38,7 +38,7 @@
     placeholder="Update notes..."
     >{{ log.notes }}</textarea>
 
-    <button type="submit" class="btn btn-primary" style="margin-top:10px;"> Update Nappy</button>
+    <button type="submit" class="btn btn-primary" style="margin-top:10px;">Update</button>
     <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
 
 </form>

@@ -8,6 +8,13 @@
 <p><strong>Naps:</strong> {{ sleeps|length }}</p>
 <p><strong>Nappy changes:</strong> {{ nappies|length }}</p>
 
+{{ total_feeds }}
+{{ total_nappies }}
+{{ wet_count }}
+{{ dirty_count }}
+{{ total_sleep_minutes }}
+
+
 <a href="{{ url_for('feeding') }}">Add Feed</a>
 <a href="{{ url_for('sleep') }}">Add Sleep</a>
 <a href="{{ url_for('nappy') }}">Add Nappy</a>

@@ -6,7 +6,7 @@ from bson import ObjectId
 from flask import Flask,session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from functools import wraps
 import re
 import os
@@ -152,32 +152,46 @@ def register():
 def dashboard():
     user_id = session['user_id']
     today = date.today()
-
-    # connect to the db
-    conn = get_db_connection()
+    today_start = datetime.combine(today, time.min)
+    today_end = datetime.combine(today, time.max)
 
     # Fetch today's logs 
-    feeds =  conn.execute(
-        "SELECT * FROM feeding WHERE user_id = ? AND date(time) = ?",
-        (user_id, today)
-    ).fetchall()
+    feeds = list(db.feeding_logs.find({
+        "user_id": user_id,
+        "time": {"$gte": today_start, "$lte": today_end}
+    }))
     
-    sleeps = conn.execute(
-        "SELECT * FROM sleep WHERE user_id = ? AND date(start_time) = ?",
-        (user_id, today)
-    ).fetchall()
+    sleeps = list(db.sleep_logs.find({
+        "user_id": user_id,
+        "time": {"$gte": today_start, "$lte": today_end}
+    }))
+    
+    nappies = list(db.nappy_logs.find({
+        "user_id": user_id,
+        "time": {"$gte": today_start, "$lte": today_end}
+    }))
+    
+    # Totals
+    total_feeds = len(feeds)
+    total_nappies = len(nappies)
+    wet_count = sum(1 for n in nappies if n["nappy_type"] == "Wet")
+    dirty_count = sum(1 for n in nappies if n["nappy_type"] == "Dirty")
 
-    nappies = conn.execute(
-        "SELECT * FROM nappy WHERE user_id = ? AND date(time) = ?",
-        (user_id, today)
-    ).fetchall()
+    total_sleep_minutes = sum(
+        (s["end_time"] - s["start_time"]).total_seconds() / 60
+        for s in sleeps
+    )
 
-    conn.close()
-
-    return render_template('dashboard.html',
-                           feeds=feeds,
-                           sleeps=sleeps,
-                           nappies=nappies)
+    return render_template(
+        "dashboard.html",
+        feeds=feeds,
+        sleeps=sleeps,
+        nappies=nappies, 
+        total_feeds=total_feeds,
+        total_nappies=total_nappies,
+        total_sleep_minutes=total_sleep_minutes,
+        wet_count=wet_count,
+        dirty_count=dirty_count)
 
 # LOG USERS IN
 @app.route('/login', methods= ['GET', 'POST'])

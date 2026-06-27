@@ -1,3 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
 {% if error %}
     <p class="error">{{ error }}</p>
 {% endif %}
@@ -42,3 +44,4 @@
     <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
 
 </form>
+{% endblock %}

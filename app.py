@@ -20,6 +20,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 
 db = client["Childcare_Tracking"]
+sleep_logs = db["sleep_logs"]
 
 users = []
 # Database Connection
@@ -56,6 +57,17 @@ def format_time(value):
         return dt.strftime("%I:%M %p — %d %b %Y")
     except:
         return value
+    
+# Greeting
+def get_greeting():
+    current_hour = datetime.now().hour
+
+    if 0 <= current_hour < 12:
+        return "Good morning"
+    elif 12 <= current_hour <= 18:
+        return "Good afternoon"
+    else:
+        return "Good evening"
 
 @app.route('/') 
 def home():
@@ -151,6 +163,9 @@ def register():
 @login_required
 def dashboard():
     user_id = session['user_id']
+    first_name = session.get('first_name')
+    greeting = get_greeting()
+
     today = date.today()
     today_start = datetime.combine(today, time.min)
     today_end = datetime.combine(today, time.max)
@@ -160,38 +175,71 @@ def dashboard():
         "user_id": user_id,
         "time": {"$gte": today_start, "$lte": today_end}
     }))
+
+    total_meals = db.feeding_logs.count_documents({
+    "user_id": user_id,
+    "type": "Meal",
+    "time": {"$gte": today_start, "$lte": today_end}
+    })
+
+    total_snacks = db.feeding_logs.count_documents({
+    "user_id": user_id,
+    "type": "Snack",
+    "time": {"$gte": today_start, "$lte": today_end}
+    })
+
+    total_drank = db.feeding_logs.count_documents({
+    "user_id": user_id,
+    "type": {"$in": ["Milk", "Water", "Juice"]},
+    "time": {"$gte": today_start, "$lte": today_end}
+    })
+
     
     sleeps = list(db.sleep_logs.find({
         "user_id": user_id,
         "time": {"$gte": today_start, "$lte": today_end}
     }))
-    
-    nappies = list(db.nappy_logs.find({
-        "user_id": user_id,
-        "time": {"$gte": today_start, "$lte": today_end}
-    }))
-    
-    # Totals
-    total_feeds = len(feeds)
-    total_nappies = len(nappies)
-    wet_count = sum(1 for n in nappies if n["nappy_type"] == "Wet")
-    dirty_count = sum(1 for n in nappies if n["nappy_type"] == "Dirty")
 
+    total_naps = sleep_logs.count_documents({
+        "user_id": user_id,
+        "start_time": {"$gte": today_start, "$lte": today_end}    
+    })
+    
     total_sleep_minutes = sum(
         (s["end_time"] - s["start_time"]).total_seconds() / 60
         for s in sleeps
     )
 
+    sleep_hours = total_sleep_minutes // 60
+    sleep_minutes = total_sleep_minutes % 60
+    total_sleep_formatted = f"{sleep_hours}h {sleep_minutes}m"
+
+    nappies = list(db.nappy_logs.find({
+        "user_id": user_id,
+        "time": {"$gte": today_start, "$lte": today_end}
+    }))
+    
+    total_nappies = len(nappies)
+    wet_count = sum(1 for n in nappies if n["nappy_type"] == "Wet")
+    dirty_count = sum(1 for n in nappies if n["nappy_type"] == "Dirty")
+
     return render_template(
         "dashboard.html",
         feeds=feeds,
         sleeps=sleeps,
-        nappies=nappies, 
-        total_feeds=total_feeds,
+        nappies=nappies,
+        first_name=first_name,
+        greeting=greeting, 
+        total_meals=total_meals,
+        total_snacks=total_snacks,
+        total_drank=total_drank,
         total_nappies=total_nappies,
-        total_sleep_minutes=total_sleep_minutes,
         wet_count=wet_count,
-        dirty_count=dirty_count)
+        dirty_count=dirty_count,
+        total_sleep_minutes=total_sleep_minutes,
+        total_naps=total_naps,
+        total_sleep_formatted=total_sleep_formatted
+)
 
 # LOG USERS IN
 @app.route('/login', methods= ['GET', 'POST'])

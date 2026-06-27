@@ -69,10 +69,10 @@
 
         <td>{{ log.notes }}</td>
         <td> 
-            <a href="{{ url_for('edit_feeding', id=log.__id) }}" class="btn-warning btn-sm">Edit</a>
+            <a href="{{ url_for('edit_feeding', id=log._id) }}" class="btn-small">Edit</a>
 
             <form action="{{ url_for('delete_feeding', id=log._id) }}" method="post" style="display:inline;">
-                <button class="btn btn-danger btn-sm">Delete</button>
+                <button class="btn-small">Delete</button>
             </form>
         </td>
     </tr>

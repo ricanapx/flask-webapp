@@ -32,10 +32,10 @@
         <td>{{ log.nappy_type }}</td>
         <td>{{ log.notes }}</td>
         <td>
-            <a href="{{ url_for('edit_nappy', id=log._id) }}" class="btn-warning btn-sm">Edit</a>
+            <a href="{{ url_for('edit_nappy', id=log._id) }}" class="btn-small">Edit</a>
 
             <form action="{{ url_for('delete_nappy', id=log._id) }}" method="post" style="display:inline;">
-                <button class="btn btn-danger btn-sm">Delete</button>
+                <button class="btn-small">Delete</button>
             </form>
         </td>
     </tr>

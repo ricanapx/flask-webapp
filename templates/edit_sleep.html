@@ -1,3 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
 <h2>Edit Sleep</h2>
 
 {% if error %}
@@ -44,3 +46,4 @@
     <button type="submit" class = "btn btn-primary" style="margin-top:10px;"> Update Sleep</button>
     <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
 </form>
+{% endblock %}

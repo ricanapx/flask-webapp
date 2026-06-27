@@ -42,10 +42,10 @@
         <td>{{ log.duration }}</td>
         <td>{{ log.notes }}</td>
         <td>
-            <a href="{{ url_for('edit_sleep', id=log._id) }}" class="btn-warning btn-sm">Edit</a>
+            <a href="{{ url_for('edit_sleep', id=log._id) }}" class="btn-small">Edit</a>
 
             <form action="{{ url_for('delete_sleep', id=log._id) }}" method="post" style="display:inline;">
-                <button class="btn btn-danger btn-sm">Delete</button>
+                <button class="btn-small">Delete</button>
             </form>
         </td>
     </tr>

@@ -158,6 +158,33 @@ def register():
             
     return render_template('register.html')  # Render the register.html template for GET requests
 
+
+# LOG USERS IN
+@app.route('/login', methods= ['GET', 'POST'])
+def login(): 
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        conn = get_db_connection()
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+        
+        if user and check_password_hash(user['password'], password):
+            first_name = user['first_name']
+            
+            session['user_id'] = user['id']
+            session['user_email'] = user['email']
+            session['first_name'] = user['first_name']
+            
+            flash(f"Login Successful!")
+            return redirect(url_for('dashboard'))
+        else:
+            flash("Invalid email or password.")
+            return render_template('login.html')
+        
+    return render_template('login.html')  # Render the data.html template and pass the users list to it
+
 # DASHBOARD - allows users to see summary of daily input
 @app.route('/dashboard')
 @login_required
@@ -240,33 +267,6 @@ def dashboard():
         total_naps=total_naps,
         total_sleep_formatted=total_sleep_formatted
 )
-
-# LOG USERS IN
-@app.route('/login', methods= ['GET', 'POST'])
-def login(): 
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        conn.close()
-        
-        if user and check_password_hash(user['password'], password):
-            first_name = user['first_name']
-            
-            session['user_id'] = user['id']
-            session['user_email'] = user['email']
-            session['first_name'] = user['first_name']
-            
-            flash(f"Login Successful!")
-            return redirect(url_for('dashboard'))
-        else:
-            flash("Invalid email or password.")
-            return render_template('login.html')
-        
-    return render_template('login.html')  # Render the data.html template and pass the users list to it
-
 # FEEDING ROUTE
 @app.route('/feeding', methods=['GET', 'POST'])
 @login_required

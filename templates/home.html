@@ -1,12 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Welcome to the Childcare Tracker</h1>
-
-{% if session.get('first_name') %}
-    <h2>Welcome back, {{ session.first_name }}!</h2>
-{% endif %}
-
-<p>Track feeding, sleep, and nappy changes easily.</p>
+<h1>Welcome to ChildCare Tracker</h1>
+<p>Your simple, friendly tool for keeping track of your child's daily routines.</p>
+<p>Log feeds, naps, drinks, and nappy changes — all in one place.</p>
+<p>Stay organised, stay informed, and make parenting just a little easier.</p>
 
 <img src="{{ url_for('static', filename='images/childcare.jpg') }}" alt="Home Image" width="300"
     style="width:100%; border-radius:8px;">

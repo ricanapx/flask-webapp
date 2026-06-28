@@ -84,6 +84,7 @@ button:hover {
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
+    font-weight: 600;
 }
 
 .btn-small:hover {

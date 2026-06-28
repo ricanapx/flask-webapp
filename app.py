@@ -14,7 +14,7 @@ import os
 load_dotenv()
 
 app = Flask(__name__) 
-app.secret_key = "redbutterflies"
+app.secret_key = os.environ.get("SECRET_KEY")
 
 MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)

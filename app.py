@@ -90,6 +90,45 @@ def calculate_age(date_string):
     except:
         return None
     
+def get_child_stage(date_string):
+    if not date_string:
+        return None
+    try:
+        dob = datetime.strptime(date_string, "%Y-%m-%d").date()
+        today = date.today()
+
+        years = today.year - dob.year
+        months = today.month - dob.month
+        days = today.day - dob.day
+
+        if days < 0:
+            months -= 1
+        if months < 0:
+            years -= 1
+            months += 12
+
+        total_months = years * 12 + months
+
+        if total_months < 1:
+            stage = "Newborn"
+        elif total_months < 6:
+            stage = "Young Infant"
+        elif total_months < 12:
+            stage = "Older Infant"
+        elif total_months < 36:
+            stage = "Toddler"
+        elif total_months < 60:
+            stage = "Preschooler"
+        elif total_months < 96:
+            stage = "Early School Age"
+        else:
+            stage = "Child"
+
+        return f"{stage}"
+    except:
+        return None
+
+    
 def format_member_since(datetime_string):
     if not datetime_string:
         return None
@@ -344,11 +383,15 @@ def edit_parent():
     ).fetchone()
 
     if request.method == "POST":
+        if 'cancel' in request.form:
+            flash("Update cancelled.")
+            return redirect('/parent')
+
         email = request.form.get("email")
         username = request.form.get("username")
         parent_dob = request.form.get("parent_dob")
         parent_gender = request.form.get("parent_gender")
-
+    
         conn.execute("""
             UPDATE users
             SET email = ?, username = ?, parent_dob = ?, parent_gender = ?
@@ -379,12 +422,14 @@ def child_profile():
 
     formatted_child_dob = format_dob(child['child_dob'])
     child_age = calculate_age(child['child_dob'])
+    child_stage = get_child_stage(child['child_dob'])     
 
     return render_template(
         "child_profile.html",
         child=child,
         formatted_child_dob=formatted_child_dob,
-        child_age=child_age)
+        child_age=child_age,
+        child_stage=child_stage)
 
 # Edit child 
 @app.route('/edit_child', methods=['GET', 'POST'])
@@ -399,6 +444,10 @@ def edit_child():
     ).fetchone()
 
     if request.method == "POST":
+        if 'cancel' in request.form:
+            flash("Update cancelled.")
+            return redirect('/child')
+
         name = request.form.get("child_name")
         dob = request.form.get("child_dob")
         gender = request.form.get("child_gender")

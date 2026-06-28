@@ -8,7 +8,15 @@
     <p><strong>Date of Birth:</strong> {{ formatted_child_dob }}</p>
     <p><strong>Age:</strong> {{ child_age }}</p>
     <p><strong>Child's Stage:</strong> {{ child_stage }}</p>
-    <p><strong>Gender:</strong> {{ child.child_gender }}</p>
+    <p><strong>Gender:</strong>
+    {% if child.child_gender == "Male" %}
+    Boy
+{% elif child.child_gender == "Female" %}
+    Girl
+{% else %}
+    {{ child.child_gender }}
+{% endif %}
+</p>
 
     <div class="actions mt-3">
         <a href="{{ url_for('edit_child') }}" class="btn btn-edit">Edit Child Profile</a>

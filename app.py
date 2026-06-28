@@ -303,7 +303,6 @@ def setup_child():
     conn.close()
     return render_template("setup_child.html", child=child)
 
-# LOG USERS IN
 @app.route('/login', methods= ['GET', 'POST'])
 def login(): 
     if request.method == 'POST':
@@ -323,6 +322,8 @@ def login():
             session['user_id'] = user['id']
             session['user_email'] = user['email']
             session['first_name'] = user['first_name']
+ 
+            session['username'] = user['username']
 
             if user['username'] is None:
                 flash("Please complete your profile.")
@@ -344,7 +345,7 @@ def login():
             flash("Invalid email or password.")
             return render_template('login.html')
          
-    return render_template('login.html')  # Render the data.html template and pass the users list to it
+    return render_template('login.html') 
 
 @app.route('/parent')
 @login_required
@@ -392,6 +393,17 @@ def edit_parent():
         parent_dob = request.form.get("parent_dob")
         parent_gender = request.form.get("parent_gender")
     
+
+        existing = conn.execute(
+            "SELECT * FROM users WHERE username = ? AND id != ?",
+            (username, session['user_id'])
+        ).fetchone()
+
+        if existing:
+            flash("Username already exists")
+            conn.close()
+            return redirect(url_for('parent_profile'))
+
         conn.execute("""
             UPDATE users
             SET email = ?, username = ?, parent_dob = ?, parent_gender = ?
@@ -400,6 +412,8 @@ def edit_parent():
 
         conn.commit()
         conn.close()
+
+        session['username'] = username
 
         flash("Profile updated successfully.")
         return redirect(url_for('parent_profile'))
@@ -473,14 +487,20 @@ def edit_child():
     conn.close()
     return render_template("edit_child.html", child=child)
 
-
-# DASHBOARD
 @app.route('/dashboard')
 @login_required
 def dashboard():
     user_id = session['user_id']
     first_name = session.get('first_name')
     greeting = get_greeting()
+
+    conn = get_db_connection()
+    child = conn.execute(
+        "SELECT * FROM children WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+
 
     today = date.today()
     today_start = datetime.combine(today, time.min)
@@ -554,9 +574,10 @@ def dashboard():
         dirty_count=dirty_count,
         total_sleep_minutes=total_sleep_minutes,
         total_naps=total_naps,
-        total_sleep_formatted=total_sleep_formatted
+        total_sleep_formatted=total_sleep_formatted,
+        child=child
 )
-# FEEDING ROUTE
+
 @app.route('/feeding', methods=['GET', 'POST'])
 @login_required
 def feeding():
@@ -605,7 +626,6 @@ def feeding():
 
         return redirect(url_for('feeding'))
    
-    # ALWAYS show logs (GET order)
     logs = list(
         db.feeding_logs
         .find({"user_id": session['user_id']})
@@ -696,8 +716,7 @@ def edit_feeding(id):
 
 
     return render_template('edit_feeding.html', log=log)
-
-# SLEEP ROUTE        
+        
 @app.route('/sleep', methods=['GET', 'POST'])
 @login_required
 def sleep():
@@ -771,7 +790,6 @@ def sleep():
                             max_date=max_date
                             )
 
-# DELETE FROM SLEEP
 @app.route('/sleep/delete/<id>', methods=['POST'])
 @login_required
 def delete_sleep(id):
@@ -787,8 +805,7 @@ def delete_sleep(id):
         flash("Sleep entry deleted.")
 
     return redirect(url_for('sleep'))
-
-# UPDATE SLEEP 
+ 
 @app.route('/edit/sleep/<id>', methods=['GET', 'POST'])
 @login_required
 def edit_sleep(id):
@@ -862,7 +879,6 @@ def edit_sleep(id):
         max_date=max_date
     )
 
-# NAPPY ROUTE
 @app.route('/nappy', methods=['GET', 'POST'])
 @login_required
 def nappy():
@@ -898,7 +914,6 @@ def nappy():
 
     return render_template('nappy.html', logs=logs)
 
-# DELETE FROM NAPPY 
 @app.route('/nappy/delete/<id>', methods=['POST'])
 @login_required
 def delete_nappy(id):
@@ -915,7 +930,6 @@ def delete_nappy(id):
 
     return redirect(url_for('nappy'))
 
-# UPDATE NAPPY
 @app.route('/nappy/edit/<id>', methods=['GET', 'POST'])
 @login_required
 def edit_nappy(id):
@@ -968,7 +982,6 @@ def edit_nappy(id):
 
     return render_template ('edit_nappy.html', log=log)
 
-# Admin Route
 @app.route('/admin')
 @login_required
 def admin():
@@ -1002,7 +1015,6 @@ def logout():
 # Run table creation
 create_users_table()
 
-# RUN FLASK 
 def open_browser():
     webbrowser.open_new('http://localhost:5000/')
 
@@ -1010,6 +1022,5 @@ def app_run_flask():
      Timer(1, open_browser).start() # Start a timer that will call the open_browser function after 1 second, which will open the web browser to the specified URL.
      app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
 
-# Running the app with a custom host and port, enabling debug mode, and disabling the reloader to prevent the server from restarting automatically when code changes are detected. This is useful for development purposes
 app_run_flask() 
 

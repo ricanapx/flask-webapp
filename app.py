@@ -58,6 +58,48 @@ def format_time(value):
     except:
         return value
     
+def format_dob(date_string):
+    if not date_string:
+        return None
+    try:
+        dt = datetime.strptime(date_string, "%Y-%m-%d")
+        return dt.strftime("%d %B %Y") 
+    except:
+        return date_string
+    
+def calculate_age(date_string):
+    if not date_string:
+        return None
+    try:
+        dob = datetime.strptime(date_string, "%Y-%m-%d").date()
+        today = date.today()
+
+        years = today.year - dob.year
+        months = today.month - dob.month
+        days = today.day - dob.day
+
+        if days < 0:
+            months -= 1
+        if months < 0:
+            years -= 1
+            months += 12
+
+        if years < 1:
+            return f"{months} months"
+        return f"{years} years {months} months"
+    except:
+        return None
+    
+def format_member_since(datetime_string):
+    if not datetime_string:
+        return None
+    try:
+        dt = datetime.strptime(datetime_string, "%Y-%m-%d %H:%M:%S")
+        return dt.strftime("%d %B %Y")
+    except:
+        return datetime_string
+
+    
 # Greeting
 def get_greeting():
     current_hour = datetime.now().hour
@@ -69,18 +111,6 @@ def get_greeting():
     else:
         return "Good evening"
 
-@app.route('/') 
-def home():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
-    return render_template('home.html')  # Render the home.html template and pass the users list to it
-
-@app.route('/about')
-def about():
-    return render_template('about.html')  # Render the about.html template
-    
-# Decorator for extra protection. 
-# Ensures that anyone who comes across certain pages must be logged in and displays the message too.
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -105,6 +135,16 @@ def is_password_strong(password):
         return False
     return True
 
+@app.route('/') 
+def home():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return render_template('home.html')  
+
+@app.route('/about')
+def about():
+    return render_template('about.html')  
+
 # REGISTER USER
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -113,6 +153,10 @@ def register():
         last_name = request.form['last_name']
         email = request.form['email']
         password = request.form['password']
+        username = request.form.get('username')
+       
+        if username == "":
+            username = None
 
         if not is_valid_email(email):
             flash('Invalid email formail. PLease enter a valid email.')
@@ -127,24 +171,26 @@ def register():
 
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
+        created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
         conn = get_db_connection()
 
         try:
             conn.execute(
-                "INSERT INTO users (first_name, last_name, email, password) VALUES (?, ?, ?, ?)",
-                (first_name, last_name, email, hashed_password)
+                "INSERT INTO users (first_name, last_name, email, password, username, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (first_name, last_name, email, hashed_password, username, created_at)
             )
             conn.commit()
-                        
-            #Log in user after registering.
+             
             user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
 
             session['user_id'] = user_id
             session['user_email'] = email
             session['first_name'] = first_name
 
-            flash(f"Registeration Successful! Welcome, {first_name}!")
-            return redirect(url_for('home'))  # Redirect to the home page after registration
+            flash("Account created! Please complete your profile.")
+            return redirect(url_for('setup_parent'))
+
 
         except sqlite3.IntegrityError:
             flash("Email already registered.")
@@ -156,18 +202,80 @@ def register():
         finally:
             conn.close()
             
-    return render_template('register.html')  # Render the register.html template for GET requests
+    return render_template('register.html')  
 
+@app.route('/setup_parent', methods=['GET', 'POST'])
+@login_required
+def setup_parent():
+    user_id = session.get("user_id")
+
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    
+    if request.method == "POST":
+        username = request.form.get("username")
+        parent_dob = request.form.get("parent_dob")
+        parent_gender = request.form.get("parent_gender")
+
+        conn.execute("""
+            UPDATE users SET username = ?, parent_dob = ?, parent_gender = ? 
+            WHERE id = ?
+        """, (username, parent_dob, parent_gender, user_id))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('setup_child'))
+    
+    conn.close()
+    return render_template("setup_parent.html", user=user)
+
+@app.route('/setup_child', methods=['GET', 'POST'])
+@login_required
+def setup_child():
+    user_id = session.get("user_id")
+
+    conn = get_db_connection()
+    child = conn.execute("SELECT * FROM children WHERE user_id = ?", (user_id,)).fetchone()
+
+    if request.method == "POST":
+        child_name = request.form.get("child_name")
+        child_dob = request.form.get("child_dob")
+        child_gender = request.form.get("child_gender")
+
+        if child is None:
+            conn.execute("""
+                INSERT INTO children (user_id, child_name, child_dob, child_gender, created_at)
+                VALUES (?, ?, ?, ?, datetime('now'))
+            """, (user_id, child_name, child_dob, child_gender))
+        else:
+            conn.execute("""
+                UPDATE children
+                SET child_name = ?, child_dob = ?, child_gender = ?
+                WHERE user_id = ?
+            """, (child_name, child_dob, child_gender, user_id))
+
+        conn.commit()
+        conn.close()
+
+        flash("Profile setup complete!")
+        return redirect(url_for('dashboard'))
+
+    conn.close()
+    return render_template("setup_child.html", child=child)
 
 # LOG USERS IN
 @app.route('/login', methods= ['GET', 'POST'])
 def login(): 
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        identifier = request.form.get("identifier")
+        password = request.form.get("password")
 
         conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        user = conn.execute(
+            "SELECT * FROM users WHERE email = ? OR username = ?",
+            (identifier, identifier)
+        ).fetchone()
         conn.close()
         
         if user and check_password_hash(user['password'], password):
@@ -176,16 +284,148 @@ def login():
             session['user_id'] = user['id']
             session['user_email'] = user['email']
             session['first_name'] = user['first_name']
+
+            if user['username'] is None:
+                flash("Please complete your profile.")
+                return redirect(url_for('setup_parent'))
+
+            conn = get_db_connection()
+            child = conn.execute(
+                "SELECT * FROM children WHERE user_id = ?",
+                (user['id'],)
+            ).fetchone()
+            conn.close()
+
+            if child is None and user['first_login'] == 1:
+                return redirect(url_for('setup_parent'))
             
             flash(f"Login Successful!")
             return redirect(url_for('dashboard'))
         else:
             flash("Invalid email or password.")
             return render_template('login.html')
-        
+         
     return render_template('login.html')  # Render the data.html template and pass the users list to it
 
-# DASHBOARD - allows users to see summary of daily input
+@app.route('/parent')
+@login_required
+def parent_profile():
+    user_id = session.get("user_id")
+
+    conn = get_db_connection()
+    user = conn.execute(
+        "SELECT * FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+
+    formatted_dob = format_dob(user['parent_dob'])
+    parent_age = calculate_age(user['parent_dob'])
+    member_since = format_member_since(user['created_at'])
+
+    return render_template(
+        "parent_profile.html",
+        user=user,
+        formatted_dob=formatted_dob,
+        parent_age=parent_age,
+        member_since=member_since
+    )
+
+# Edit parent profile 
+@app.route('/edit_parent', methods=['GET', 'POST'])
+@login_required
+def edit_parent():
+    user_id = session.get("user_id")
+
+    conn = get_db_connection()
+    user = conn.execute(
+        "SELECT * FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+
+    if request.method == "POST":
+        email = request.form.get("email")
+        username = request.form.get("username")
+        parent_dob = request.form.get("parent_dob")
+        parent_gender = request.form.get("parent_gender")
+
+        conn.execute("""
+            UPDATE users
+            SET email = ?, username = ?, parent_dob = ?, parent_gender = ?
+            WHERE id = ?
+        """, (email, username, parent_dob, parent_gender, user_id))
+
+        conn.commit()
+        conn.close()
+
+        flash("Profile updated successfully.")
+        return redirect(url_for('parent_profile'))
+
+    conn.close()
+    return render_template("edit_parent.html", user=user)
+
+# Child profile route
+@app.route('/child')
+@login_required
+def child_profile():
+    user_id = session.get("user_id")
+
+    conn = get_db_connection()
+    child = conn.execute(
+        "SELECT * FROM children WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+
+    formatted_child_dob = format_dob(child['child_dob'])
+    child_age = calculate_age(child['child_dob'])
+
+    return render_template(
+        "child_profile.html",
+        child=child,
+        formatted_child_dob=formatted_child_dob,
+        child_age=child_age)
+
+# Edit child 
+@app.route('/edit_child', methods=['GET', 'POST'])
+@login_required
+def edit_child():
+    user_id = session.get("user_id")
+
+    conn = get_db_connection()
+    child = conn.execute(
+        "SELECT * FROM children WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+
+    if request.method == "POST":
+        name = request.form.get("child_name")
+        dob = request.form.get("child_dob")
+        gender = request.form.get("child_gender")
+
+        if child:
+            conn.execute("""
+                UPDATE children
+                SET child_name = ?, child_dob = ?, child_gender = ?
+                WHERE user_id = ?
+            """, (name, dob, gender, user_id))
+        else:
+            conn.execute("""
+                INSERT INTO children (user_id, child_name, child_dob, child_gender, created_at)
+                VALUES (?, ?, ?, ?, datetime('now'))
+            """, (user_id, name, dob, gender))
+
+        conn.commit()
+        conn.close()
+
+        flash("Child profile updated.")
+        return redirect(url_for('child_profile'))
+
+    conn.close()
+    return render_template("edit_child.html", child=child)
+
+
+# DASHBOARD
 @app.route('/dashboard')
 @login_required
 def dashboard():

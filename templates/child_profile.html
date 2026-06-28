@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <div class="card shadow-sm p-4" style="border-left: 6px solid #ffb6c1;">
+        <h2 class="mb-3">👶 Child Profile</h2>
+
+        <p><strong>Name:</strong> {{ child.child_name }}</p>
+        <p><strong>Date of Birth:</strong> {{ formatted_child_dob }}</p>
+        <p><strong>Age:</strong> {{ child_age }}</p>
+        <p><strong>Gender:</strong> {{ child.child_gender }}</p>
+    
+        <a href="{{ url_for('edit_child') }}" class="btn btn-warning mt-3" style="border-radius: 8px;">
+            Edit Child Profile
+        </a>
+    </div>
+</div>
+
+{% endblock %}

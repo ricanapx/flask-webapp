@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+
+        <div class="mb-4">
+        <p class="text-muted mb-1">Step 1 of 2 — Parent Setup</p>
+        <div class="progress" style="height: 10px; border-radius: 8px;">
+            <div class="progress-bar bg-primary" 
+                 role="progressbar" 
+                 style="width: 50%; border-radius: 8px;">
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm p-4" 
+         style="border-left: 6px solid #f2d178; border-radius: 12px;">
+        
+        <h2 class="mb-3">👩‍👧 Parent Setup</h2>
+        <p class="text-muted">Let's set up your parent profile first.</p>
+
+        <form method="POST">
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Parent Username:</strong></label>
+                <input type="text" name="username" class="form-control" 
+                       placeholder="Enter your username" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Date of Birth</strong></label>
+                <input type="date" name="parent_dob" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Gender</strong></label>
+                <select name="parent_gender" class="form-select" required>
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+                
+            <button type="submit" 
+                    class="btn btn-primary mt-2"
+                    style="border-radius: 8px;">
+                Next →
+            </button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+

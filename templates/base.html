@@ -13,19 +13,17 @@
     {% endif %}
 
     {% if session.get('user_id') %}
+        <a href="{{ url_for('parent_profile') }}">Your Profile</a>
+        <a href="{{ url_for('child_profile') }}">Child Profile</a>
         <a href="{{ url_for('feeding') }}">Feeding</a>
         <a href="{{ url_for('sleep') }}">Sleep</a>
         <a href="{{ url_for('nappy') }}">Nappy</a>
         <a href="{{ url_for('contact') }}">Contact</a>
         <a href="{{ url_for('logout') }}">Logout</a>
-
+        
         {% if session.get('user_email') == admin_email %}
             <a href="{{ url_for('admin') }}">Admin</a>
         {% endif %}
-
-        <span style="color:white; margin-left:20px;">
-            Welcome, {{ session.first_name }}!
-        </span>
 
     {% else %}
         <a href="{{ url_for('login') }}">Login</a>
@@ -35,7 +33,6 @@
 
     {% endif %}
 </nav>
-
 
 <div class="container">
     {% with messages = get_flashed_messages() %}
@@ -48,6 +45,5 @@
 
     {% block content %}{% endblock %}
 </div>
-
 </body>
 </html>

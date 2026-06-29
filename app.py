@@ -49,6 +49,7 @@ def create_users_table():
     conn.commit()
     conn.close()
 
+<<<<<<< HEAD
 @app.template_filter('format_time')
 def format_time(value):
     from datetime import datetime
@@ -72,13 +73,22 @@ def format_time(value):
         pass
 
     # value = a string with a T (older logs)
+=======
+#Time Formatting
+@app.template_filter('format_time')
+def format_time(value):
+>>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
     try:
         dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
         return dt.strftime("%I:%M %p — %d %b %Y")
     except:
+<<<<<<< HEAD
         pass
 
     return value
+=======
+        return value
+>>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
     
 def format_dob(date_string):
     if not date_string:
@@ -159,6 +169,10 @@ def format_member_since(datetime_string):
         return dt.strftime("%d %B %Y")
     except:
         return datetime_string
+<<<<<<< HEAD
+=======
+
+>>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
     
 # Greeting
 def get_greeting():
@@ -638,7 +652,11 @@ def feeding():
 
         db.feeding_logs.insert_one({
             "user_id": session['user_id'],
+<<<<<<< HEAD
             "time": time_dt.strftime("%Y-%m-%d %H:%M"),
+=======
+            "time": time_dt,
+>>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
             "type": feed_type,
             "amount": amount,
             "unit": unit,

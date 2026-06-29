@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}
+    <p class="error">{{ error }}</p>
+{% endif %}
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<h2>Edit Nappy</h2>
+
+<form method ="POST">
+
+    <label for="time">Time</label>
+    <input
+        type="datetime-local" 
+        id="time" 
+        name="time" 
+        value="{{ log.time }}"
+        required
+    >
+
+    <label for="type">Type</label>
+        <select name="type" id="type" required>
+            <option value="Wet"  {% if log.nappy_type == 'Wet' %}selected{% endif %}>Wet</option>
+            <option value="Dirty"  {% if log.nappy_type == 'Dirty' %}selected{% endif %}>Dirty</option>        
+        </select>
+
+    <label for="notes">Notes</label>
+    <textarea 
+    id="notes"
+    name="notes"
+    placeholder="Update notes..."
+    >{{ log.notes }}</textarea>
+
+    <button type="submit" class="btn btn-primary" style="margin-top:10px;">Update</button>
+    <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
+
+</form>
+{% endblock %}

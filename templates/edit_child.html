@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}
+    <p class="error">{{ error }}</p>
+{% endif %}
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="container">
+    <h2>Edit Child Profile</h2>
+
+    <form method="POST">
+        <label>Child Name</label>
+        <input type="text" name="child_name" value="{{ child['child_name'] if child }}" required>
+
+        <label>Date of Birth</label>
+        <input type="date" name="child_dob" value="{{ child['child_dob'] if child }}" required>
+
+        <label>Gender</label>
+        <select name="child_gender" required>
+            <option value="Female" {% if child and child['child_gender']=='Female' %}selected{% endif %}>Female</option>
+            <option value="Male" {% if child and child['child_gender']=='Male' %}selected{% endif %}>Male</option>
+            <option value="Other" {% if child and child['child_gender']=='Other' %}selected{% endif %}>Other</option>
+        </select>
+
+        <button type="submit" class = "btn btn-primary" style="margin-top:10px;"> Update Profile</button>
+        <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
+    </form>
+</div>
+
+{% endblock %}

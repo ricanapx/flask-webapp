@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+
+        <div class="mb-4">
+        <p class="text-muted mb-1">Step 2 of 2 — Child Setup</p>
+        <div class="progress" style="height: 10px; border-radius: 8px;">
+            <div class="progress-bar bg-warning" 
+                 role="progressbar" 
+                 style="width: 100%; border-radius: 8px;">
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm p-4" 
+         style="border-left: 6px solid #e5f4a9; border-radius: 12px;">
+        
+        <h2 class="mb-3">👶 Child Setup</h2>
+        <p class="text-muted">Now let's set up your child's profile.</p>
+
+        <form method="POST">
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Child Name</strong></label>
+                <input type="text" name="child_name" class="form-control" 
+                       placeholder="Enter child's name" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Date of Birth</strong></label>
+                <input type="date" name="child_dob" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Gender</strong></label>
+                <select name="child_gender" class="form-select" required>
+                    <option value="">Select gender</option>
+                    <option value="Boy">Boy</option>
+                    <option value="Girl">Girl</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <button type="submit" 
+                    class="btn btn-warning mt-2"
+                    style="border-radius: 8px;">
+                Finish ✔
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

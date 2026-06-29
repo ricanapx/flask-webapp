@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<h2>Edit Feeding</h2>
+
+<form method="POST">
+
+    <label>Time</label>
+    <input type="datetime-local" name="time" value="{{ log.time }}" required>
+
+    <label>Type</label>
+    <select name="type" id="feed-type" onchange="toggleFields()" required>
+        <option value="Milk"  {% if log.type == "Milk" %}selected{% endif %}>Milk</option>
+        <option value="Water" {% if log.type == "Water" %}selected{% endif %}>Water</option>
+        <option value="Juice" {% if log.type == "Juice" %}selected{% endif %}>Juice</option>
+        <option value="Meal"  {% if log.type == "Meal" %}selected{% endif %}>Meal</option>
+        <option value="Snack" {% if log.type == "Snack" %}selected{% endif %}>Snack</option>
+    </select>
+
+    <label id="amount-label">
+        {% if log.unit == "%" %}
+            Amount Ate
+        {% else %}
+            Amount Drank
+        {% endif %}
+    </label>
+
+    <div id="measured-fields" style="margin-top:10px;">
+        <input type="number" name="amount" step="0.1" value="{{ log.amount if log.unit != '%' else '' }}">
+        <select name="unit">
+            <option value="ml" {% if log.unit == "ml" %}selected{% endif %}>ml</option>
+            <option value="oz" {% if log.unit == "oz" %}selected{% endif %}>oz</option>
+        </select>
+    </div>
+
+    <div id="percentage-fields" style="margin-top:10px;">
+        <select name="percentage">
+            <option value="25"  {% if log.amount == "25" %}selected{% endif %}>25%</option>
+            <option value="50"  {% if log.amount == "50" %}selected{% endif %}>50%</option>
+            <option value="75"  {% if log.amount == "75" %}selected{% endif %}>75%</option>
+            <option value="100" {% if log.amount == "100" %}selected{% endif %}>100%</option>
+        </select>
+    </div>
+
+    <label>Notes</label>
+    <textarea name="notes">{{ log.notes }}</textarea>
+
+    <button type="submit" class="btn btn-primary" style="margin-top:10px;">Save Changes</button>
+    <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
+</form>
+
+<script>
+function toggleFields() {
+    const type = document.getElementById("feed-type").value;
+
+    const measured = document.getElementById("measured-fields");
+    const percent = document.getElementById("percentage-fields");
+    const label = document.getElementById("amount-label");
+
+    if (type === "Meal" || type === "Snack") {
+        measured.style.display = "none";
+        percent.style.display = "block";
+        label.textContent = "Amount Ate";
+    } else {
+        measured.style.display = "block";
+        percent.style.display = "none";
+        label.textContent = "Amount Drank";
+    }
+}
+
+toggleFields();
+</script>
+{% endblock %}

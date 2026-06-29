@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="mb-3">🍽️ Feeding Log</h1>
+
+<div class="child-card">
+
+    <form method="POST">
+        <label>Time</label>
+        <input type="datetime-local" name="time" required>
+
+        <label>Type</label>
+        <select name="type" id="feed-type" onchange="toggleFields()" required>
+            <option value="Milk">Milk</option>
+            <option value="Water">Water</option>
+            <option value="Juice">Juice</option>
+            <option value="Meal">Meal</option>
+            <option value="Snack">Snack</option>
+        </select>
+
+        <label id="amount-label">Amount Drank</label>
+
+        <div id="measured-fields">
+            <input type="number" name="amount" step="0.1" placeholder="Amount">
+            <select name="unit">
+                <option value="ml">ml</option>
+                <option value="oz">oz</option>
+            </select>
+        </div>
+
+        <div id="percentage-fields" style="display:none;">
+            <select name="percentage">
+                <option value="25">25%</option>
+                <option value="50">50%</option>
+                <option value="75">75%</option>
+                <option value="100">100%</option>
+            </select>
+        </div>
+
+        <label>Notes</label>
+        <textarea name="notes" placeholder="Optional notes"></textarea>
+
+        <button type="submit" style="margin-top:10px;">Add Feeding</button>
+    </form>
+</div>
+
+<h2 class="mt-4">Feeding History</h2>
+
+<table class="table table-striped table-hover">
+    <tr>
+        <th>Time</th>
+        <th>Type</th>
+        <th>Amount</th>
+        <th>Notes</th>
+        <th>Actions</th>
+    </tr>
+
+    {% for log in logs %}
+    <tr>
+        <td>{{ log.time | format_time }}</td>
+        <td>{{ log.type }}</td>
+
+        <td>
+            {% if log.unit == "%" %}
+                {{ log.amount }}
+            {% elif log.amount %}
+                {{ log.amount }} {{ log.unit }}
+            {% else %}
+                -
+            {% endif %}
+        </td>
+
+        <td>{{ log.notes }}</td>
+
+        <td>
+            <a href="{{ url_for('edit_feeding', id=log._id) }}" class="btn-small">Edit</a>
+
+            <form action="{{ url_for('delete_feeding', id=log._id) }}" method="post" style="display:inline;">
+                <button class="btn-small">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<script>
+function toggleFields() {
+    const type = document.getElementById("feed-type").value;
+
+    const measured = document.getElementById("measured-fields");
+    const percent = document.getElementById("percentage-fields");
+    const label = document.getElementById("amount-label");
+
+    if (type === "Meal" || type === "Snack") {
+        measured.style.display = "none";
+        percent.style.display = "block";
+        label.textContent = "Amount Ate";
+    } else {
+        measured.style.display = "block";
+        percent.style.display = "none";
+        label.textContent = "Amount Drank";
+    }
+}
+
+toggleFields();
+</script>
+
+{% endblock %}

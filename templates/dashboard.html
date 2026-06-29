@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-header">
+    {% if greeting == "Good morning" %}
+        🌅 {{ greeting }}, {{ first_name }}!
+    {% elif greeting == "Good afternoon" %}
+        🌞 {{ greeting }}, {{ first_name }}!
+    {% else %}
+        🌙 {{ greeting }}, {{ first_name }}!
+    {% endif %}
+</div>
+
+ <div class="dashboard-sub">
+        Today's Summary of {{ child.child_name }}
+ </div>
+
+<div class="summary-grid">
+
+        <div class="summary-card">
+            <h3>🍽️ Food:</h3>
+            <span>Total meals: <strong>{{ total_meals }}</strong></span><br>
+            <span>Total snacks: <strong>{{ total_snacks }}</strong></span>
+        </div>
+
+        <div class="summary-card">
+            <h3>🥤 Drinks:</h3>
+            <p>{{ total_drank }}</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>😴 Sleep:</h3>
+            <p>{{ total_naps }}</p>
+
+            <div class="sleep-breakdown">
+                <span>Total sleep: <strong>{{ total_sleep_formatted }}</strong></span>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h3>🧷 Nappy Changes:</h3>
+
+            <p>{{ total_nappies }}</p>
+        
+            <div class="nappy-breakdown">
+                <span>Wet: <strong>{{ wet_count }}</strong></span><br>
+                <span>Dirty: <strong>{{ dirty_count }}</strong></span>
+             </div>          
+        </div>
+
+</div>
+
+ <div class="actions">
+        <a href="{{ url_for('feeding') }}">Add Feed</a>
+        <a href="{{ url_for('sleep') }}">Add Sleep</a>
+        <a href="{{ url_for('nappy') }}">Add Nappy</a>
+ </div>
+
+{% endblock %}

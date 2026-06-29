@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+{% if error %}
+    <p class="error">{{ error }}</p>
+{% endif %}
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="container mt-4">
+    <div class="card shadow-sm p-4" style="border-left: 6px solid #add8e6; border-radius: 12px;">
+        <h2 class="mb-3">👩‍👧 Edit Parent Profile</h2>
+
+        <form method="POST">
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Email</strong></label>
+                <input type="email" name="email" class="form-control"
+                       value="{{ user['email'] }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label"><strong>Username</strong></label>
+                <input type="text" name="username" class="form-control"
+                       value="{{ user['username'] }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Date of Birth</strong></label>
+                <input type="date" name="parent_dob" class="form-control"
+                       value="{{ user['parent_dob'] }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label"><strong>Gender</strong></label>
+                <select name="parent_gender" class="form-select" required>
+                    <option value="Female" {% if user['parent_gender'] == 'Female' %}selected{% endif %}>Female</option>
+                    <option value="Male" {% if user['parent_gender'] == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Other" {% if user['parent_gender'] == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top:10px;">Update</button>
+    <button type="submit" name="cancel" class="btn btn-secondary" style="margin-top:10px; margin-left:10px;">Cancel</button>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}

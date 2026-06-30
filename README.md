@@ -1,3 +1,5 @@
+© 2026 ricanapx. Licensed under CC BY-NC 4.0. Not for commercial use.
+
 👶🍼Childcare Tracking App
 A full‑stack Flask application using SQLite for user accounts and MongoDB for childcare logs.
 This app tracks feeding, sleep, and nappy events with clean forms, daily summaries, editing, deleting, validation, and a modern UI.

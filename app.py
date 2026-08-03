@@ -3,7 +3,7 @@ import sqlite3
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from bson import ObjectId
-from flask import Flask,session, flash, render_template, request, redirect, url_for 
+from flask import Flask, session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
 from datetime import datetime, timedelta, date, time
@@ -30,7 +30,7 @@ def get_db_connection():
     return conn
 
 
-ADMIN_EMAIL = "codegirlr@hotmail.com"
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 app.jinja_env.globals['admin_email'] = ADMIN_EMAIL
     
 # CREATE USERS TABLE
@@ -49,7 +49,6 @@ def create_users_table():
     conn.commit()
     conn.close()
 
-<<<<<<< HEAD
 @app.template_filter('format_time')
 def format_time(value):
     from datetime import datetime
@@ -73,22 +72,13 @@ def format_time(value):
         pass
 
     # value = a string with a T (older logs)
-=======
-#Time Formatting
-@app.template_filter('format_time')
-def format_time(value):
->>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
     try:
         dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
         return dt.strftime("%I:%M %p — %d %b %Y")
     except:
-<<<<<<< HEAD
         pass
 
     return value
-=======
-        return value
->>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
     
 def format_dob(date_string):
     if not date_string:
@@ -169,10 +159,6 @@ def format_member_since(datetime_string):
         return dt.strftime("%d %B %Y")
     except:
         return datetime_string
-<<<<<<< HEAD
-=======
-
->>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
     
 # Greeting
 def get_greeting():
@@ -536,7 +522,6 @@ def dashboard():
     ).fetchone()
     conn.close()
 
-
     today = date.today()
     today_start = datetime.combine(today, time.min)
     today_end = datetime.combine(today, time.max)
@@ -652,11 +637,7 @@ def feeding():
 
         db.feeding_logs.insert_one({
             "user_id": session['user_id'],
-<<<<<<< HEAD
             "time": time_dt.strftime("%Y-%m-%d %H:%M"),
-=======
-            "time": time_dt,
->>>>>>> f369cae6fa8b6e037f1658ada0190588ee22422c
             "type": feed_type,
             "amount": amount,
             "unit": unit,
@@ -1062,4 +1043,5 @@ def app_run_flask():
      app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
 
 app_run_flask() 
-
+print("WORKING DIR:", os.getcwd())
+print("TEMPLATES:", os.path.abspath(app.template_folder))

@@ -23,7 +23,7 @@
         type="datetime-local" 
         id="start" 
         name="start" 
-        value="{{ log.start_time }}"
+        value="{{ log.start_time.astimezone(zoneinfo.ZoneInfo('Europe/London')).strftime('%Y-%m-%dT%H:%M') }}"
         required
     >
 
@@ -32,7 +32,7 @@
         type="datetime-local" 
         id="end" 
         name="end" 
-        value="{{ log.end_time }}"
+        value="{{ log.end_time.astimezone(zoneinfo.ZoneInfo('Europe/London')).strftime('%Y-%m-%dT%H:%M') }}"
         required
     >
 

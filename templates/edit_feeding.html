@@ -15,7 +15,7 @@
 <form method="POST">
 
     <label>Time</label>
-    <input type="datetime-local" name="time" value="{{ log.time }}" required>
+    <input type="datetime-local" name="time" value="{{ log.time.astimezone(zoneinfo.ZoneInfo('Europe/London')).strftime('%Y-%m-%dT%H:%M') }}" required>
 
     <label>Type</label>
     <select name="type" id="feed-type" onchange="toggleFields()" required>

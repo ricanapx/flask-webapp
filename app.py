@@ -3,10 +3,11 @@ import sqlite3
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from bson import ObjectId
+from zoneinfo import ZoneInfo
 from flask import Flask, session, flash, render_template, request, redirect, url_for 
 from werkzeug.security import generate_password_hash, check_password_hash
 from threading import Timer
-from datetime import datetime, timedelta, date, time
+from datetime import datetime, timedelta, date, time, timezone
 from functools import wraps
 import re
 import os
@@ -29,9 +30,12 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 app.jinja_env.globals['admin_email'] = ADMIN_EMAIL
+
+time_str = request.form['time']
+time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+time_dt = time_dt.replace(tzinfo=ZoneInfo("Europe/London"))
     
 # CREATE USERS TABLE
 def create_users_table():
@@ -51,32 +55,29 @@ def create_users_table():
 
 @app.template_filter('format_time')
 def format_time(value):
-    from datetime import datetime
 
-    # value = a datetime object
+    # If value is a datetime object
     if hasattr(value, "strftime"):
-        return value.strftime("%I:%M %p — %d %b %Y")
+        # Convert UTC → UK time
+        uk_time = value.astimezone(ZoneInfo("Europe/London"))
+        return uk_time.strftime("%I:%M %p — %d %b %Y")
 
-    # value = a string with a space (your new format)
-    try:
-        dt = datetime.strptime(value, "%Y-%m-%d %H:%M")
-        return dt.strftime("%I:%M %p — %d %b %Y")
-    except:
-        pass
+    # Try multiple string formats
+    formats = [
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%dT%H:%M"
+    ]
 
-    # value = a string with seconds (old logs)
-    try:
-        dt = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-        return dt.strftime("%I:%M %p — %d %b %Y")
-    except:
-        pass
-
-    # value = a string with a T (older logs)
-    try:
-        dt = datetime.strptime(value, "%Y-%m-%dT%H:%M")
-        return dt.strftime("%I:%M %p — %d %b %Y")
-    except:
-        pass
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(value, fmt)
+            # Treat parsed string as UTC, then convert → UK
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+            uk_time = dt.astimezone(ZoneInfo("Europe/London"))
+            return uk_time.strftime("%I:%M %p — %d %b %Y")
+        except:
+            pass
 
     return value
     
@@ -605,15 +606,21 @@ def feeding():
     if request.method == 'POST':
 
         time_str = request.form['time']
+
         time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+        time_dt = time_dt.replace(tzinfo=ZoneInfo("Europe/London"))
 
-        today = datetime.now()
-        three_days_ago = today - timedelta(days=3)
+        # Convert to UTC
+        time_dt_utc = time_dt.astimezone(timezone.utc)
 
-    # Validation       
-        if time_dt < three_days_ago or time_dt > today:
-                flash("Date input must be within the last three days.")
-                return redirect(url_for('feeding'))
+        # Current UTC time
+        today_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+        three_days_ago_utc = today_utc - timedelta(days=3)
+
+        # Validation
+        if time_dt_utc < three_days_ago_utc or time_dt_utc > today_utc:
+            flash("Date input must be within the last three days.")
+            return redirect(url_for('feeding'))
 
         time = request.form['time']
         feed_type = request.form['type']
@@ -637,7 +644,7 @@ def feeding():
 
         db.feeding_logs.insert_one({
             "user_id": session['user_id'],
-            "time": time_dt.strftime("%Y-%m-%d %H:%M"),
+            "time": time_dt_utc,
             "type": feed_type,
             "amount": amount,
             "unit": unit,
@@ -692,12 +699,16 @@ def edit_feeding(id):
         
         # Time update/edit
         time_str = request.form['time']
-        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
 
-        today = datetime.now()
-        three_days_ago = today - timedelta(days=3)
-        
-        if time_dt < three_days_ago or time_dt > today:
+        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+        time_dt = time_dt.replace(tzinfo=ZoneInfo("Europe/London"))
+
+        time_dt_utc = time_dt.astimezone(timezone.utc)
+
+        today_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+        three_days_ago_utc = today_utc - timedelta(days=3)
+
+        if time_dt_utc < three_days_ago_utc or time_dt_utc > today_utc:
             flash("Date input must be within the last three days.")
             return redirect(url_for('edit_feeding', id=id))
     
@@ -723,7 +734,7 @@ def edit_feeding(id):
         db.feeding_logs.update_one(
             {"_id": ObjectId(id)},
             {"$set": {
-                "time": time_str,
+                "time": time_dt_utc,
                 "type": feed_type,
                 "amount": amount,
                 "unit": unit,
@@ -761,39 +772,41 @@ def sleep():
         end = request.form['end']
         notes = request.form['notes']
 
-        # Calculate duration of sleep
-        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
-        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
+        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M").replace(tzinfo=ZoneInfo("Europe/London"))
+        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M").replace(tzinfo=ZoneInfo("Europe/London"))
 
-        # Validation to ensure entry must be within last 3 days
-        if start_dt < three_days_ago or start_dt > today:
+        start_dt_utc = start_dt.astimezone(timezone.utc)
+        end_dt_utc = end_dt.astimezone(timezone.utc)
+
+        today_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+        three_days_ago_utc = today_utc - timedelta(days=3)
+
+        if start_dt_utc < three_days_ago_utc or start_dt_utc > today_utc:
             flash("Start time must be within the last three days.")
             return redirect(url_for('sleep'))
-        
-        if end_dt < three_days_ago or end_dt > today:
+
+        if end_dt_utc < three_days_ago_utc or end_dt_utc > today_utc:
             flash("End time must be within the last three days.")
             return redirect(url_for('sleep'))
 
-        # Overnight sleep being included in the duration
-        if end_dt < start_dt:
-            end_dt += timedelta(days=1)
+        if end_dt_utc < start_dt_utc:
+            end_dt_utc += timedelta(days=1)
 
-        # Actual duration calculation 
-        duration = end_dt - start_dt
+        duration = end_dt_utc - start_dt_utc
         total_minutes = duration.total_seconds() // 60
         hours = int(total_minutes // 60)
         minutes = int(total_minutes % 60)
         duration_str = f"{hours}h {minutes}m"
 
-        # Block sleep longer than 16 hours (16 hour blocks not a daily limit)
         if duration > timedelta(hours=16):
             flash("Sleep duration cannot exceed 16 hours.")
             return redirect(url_for('sleep'))
-        
+
+    
         db.sleep_logs.insert_one({
            "user_id": session['user_id'],            
-            "start_time": start,
-            "end_time": end,
+            "start_time": start_dt_utc,
+            "end_time": end_dt_utc,
             "duration": duration_str,
             "notes": notes 
         })
@@ -839,11 +852,11 @@ def edit_sleep(id):
         flash("Sleep entry not found.")
         return redirect(url_for('sleep'))
 
-    today = datetime.now()
-    three_days_ago = today - timedelta(days=3)
+    today_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+    three_days_ago_utc = today_utc - timedelta(days=3)
 
-    max_date = today.strftime("%Y-%m-%dT%H:%M")
-    min_date = three_days_ago.strftime("%Y-%m-%dT%H:%M")
+    max_date = today_utc.astimezone(ZoneInfo("Europe/London")).strftime("%Y-%m-%dT%H:%M")
+    min_date = three_days_ago_utc.astimezone(ZoneInfo("Europe/London")).strftime("%Y-%m-%dT%H:%M")
 
     if request.method == 'POST':
         
@@ -855,21 +868,24 @@ def edit_sleep(id):
         end = request.form['end']
         notes = request.form['notes']
 
-        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M")
-        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M")
+        start_dt = datetime.strptime(start, "%Y-%m-%dT%H:%M").replace(tzinfo=ZoneInfo("Europe/London"))
+        end_dt = datetime.strptime(end, "%Y-%m-%dT%H:%M").replace(tzinfo=ZoneInfo("Europe/London"))
 
-        if start_dt < three_days_ago or start_dt > today:
+        start_dt_utc = start_dt.astimezone(timezone.utc)
+        end_dt_utc = end_dt.astimezone(timezone.utc)
+
+        if start_dt_utc < three_days_ago_utc or start_dt_utc > today_utc:
             flash("Start time must be within the last three days.")
             return redirect(url_for('edit_sleep', id=id))
 
-        if end_dt < three_days_ago or end_dt > today:
+        if end_dt_utc < three_days_ago_utc or end_dt_utc > today_utc:
             flash("End time must be within the last three days.")
             return redirect(url_for('edit_sleep', id=id))
                 
-        if end_dt < start_dt:
-            end_dt += timedelta(days=1)
+        if end_dt_utc < start_dt_utc:
+            end_dt_utc += timedelta(days=1)
 
-        duration = end_dt - start_dt
+        duration = end_dt_utc - start_dt_utc
         total_minutes = duration.total_seconds() // 60
         hours = int(total_minutes // 60)
         minutes = int(total_minutes % 60)
@@ -882,8 +898,8 @@ def edit_sleep(id):
         db.sleep_logs.update_one(
             {"_id": ObjectId(id), "user_id": session['user_id']},
             {"$set": {
-                "start_time": start,
-                "end_time": end,
+                "start_time": start_dt_utc,
+                "end_time": end_dt_utc,
                 "duration": duration_str,
                 "notes": notes
             }}
@@ -906,22 +922,26 @@ def nappy():
     if request.method == 'POST':
 
         time_str = request.form['time']
-        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
 
-        today = datetime.now()
-        three_days_ago = today - timedelta(days=3)
+        time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+        time_dt = time_dt.replace(tzinfo=ZoneInfo("Europe/London"))
+
+        time_dt_utc = time_dt.astimezone(timezone.utc)
+
+        today_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+        three_days_ago_utc = today_utc - timedelta(days=3)
 
     # Validation to ensure entry must be within last 3 days        
-        if time_dt < three_days_ago or time_dt > today:
+        if time_dt_utc < three_days_ago_utc or time_dt_utc > today_utc:
             flash("Date input must be within the last three days.")
             return redirect(url_for('nappy'))
-
+        
         nappy_type = request.form['type']
         notes = request.form['notes']
 
         db.nappy_logs.insert_one({
             "user_id": session['user_id'],            
-            "time": time_dt,
+            "time": time_dt_utc,
             "nappy_type": nappy_type,
             "notes": notes,
         })
@@ -975,12 +995,17 @@ def edit_nappy(id):
         
         time_str = request.form['time']
         time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
+        time_dt = time_dt.replace(tzinfo=ZoneInfo("Europe/London"))
 
-        today = datetime.now()
-        three_days_ago = today - timedelta(days=3)
+        # Convert to UTC
+        time_dt_utc = time_dt.astimezone(timezone.utc)
+
+        # Current UTC time
+        today_utc = datetime.utcnow().replace(tzinfo=timezone.utc)
+        three_days_ago_utc = today_utc - timedelta(days=3)
 
         # Validation
-        if time_dt < three_days_ago or time_dt > today:
+        if time_dt_utc < three_days_ago_utc or time_dt_utc > today_utc:
             flash("Date input must be within the last three days.")
             return redirect(url_for('edit_nappy', id=id))
         
@@ -990,7 +1015,7 @@ def edit_nappy(id):
         db.nappy_logs.update_one(
             {"_id": ObjectId(id), "user_id": session['user_id']},
             {"$set": {
-            "time": time_dt,
+            "time": time_dt_utc,
             "nappy_type": nappy_type,
             "notes": notes,
             }}

@@ -742,7 +742,9 @@ def edit_feeding(id):
         return redirect(url_for('feeding'))
 
 
-    return render_template('edit_feeding.html', log=log)
+    return render_template('edit_feeding.html', 
+                           log=log,
+                           ZoneInfo=ZoneInfo)
         
 @app.route('/sleep', methods=['GET', 'POST'])
 @login_required
@@ -816,7 +818,8 @@ def sleep():
     return render_template('sleep.html',
                             logs=logs,
                             min_date=min_date,
-                            max_date=max_date
+                            max_date=max_date,
+                            ZoneInfo=ZoneInfo
                             )
 
 @app.route('/sleep/delete/<id>', methods=['POST'])
@@ -1021,7 +1024,9 @@ def edit_nappy(id):
         return redirect ('/nappy')
     
 
-    return render_template ('edit_nappy.html', log=log)
+    return render_template ('edit_nappy.html', 
+                            log=log,
+                            ZoneInfo=ZoneInfo)
 
 @app.route('/admin')
 @login_required

@@ -23,7 +23,7 @@
         type="datetime-local" 
         id="time" 
         name="time" 
-        value="{{ log.time.astimezone(zoneinfo.ZoneInfo('Europe/London')).strftime('%Y-%m-%dT%H:%M') }}"
+        value="{{ log.time.astimezone(ZoneInfo('Europe/London')).strftime('%Y-%m-%dT%H:%M') }}"
         required
     >
 

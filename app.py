@@ -33,10 +33,6 @@ def get_db_connection():
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
 app.jinja_env.globals['admin_email'] = ADMIN_EMAIL
 
-time_str = request.form['time']
-time_dt = datetime.strptime(time_str, "%Y-%m-%dT%H:%M")
-time_dt = time_dt.replace(tzinfo=ZoneInfo("Europe/London"))
-    
 # CREATE USERS TABLE
 def create_users_table():
     conn = sqlite3.connect('users.db')

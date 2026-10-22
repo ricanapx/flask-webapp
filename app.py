@@ -911,7 +911,8 @@ def edit_sleep(id):
         'edit_sleep.html', 
         log=log,
         min_date=min_date,
-        max_date=max_date
+        max_date=max_date,
+        ZoneInfo=ZoneInfo
     )
 
 @app.route('/nappy', methods=['GET', 'POST'])
